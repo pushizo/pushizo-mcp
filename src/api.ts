@@ -20,7 +20,7 @@ export class HeroSignalApiError extends Error {
 
 /** HTTP yanıtını çözer; hata gövdesini `HeroSignalApiError`'a çevirir. */
 export function parseApiResponse<T>(status: number, text: string): T {
-  let json: unknown = null;
+  let json: unknown;
   try {
     json = text ? JSON.parse(text) : null;
   } catch {

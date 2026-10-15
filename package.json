@@ -1,8 +1,30 @@
 {
   "name": "@herosignal/mcp-server",
   "version": "0.1.0",
-  "private": true,
   "description": "HeroSignal MCP sunucusu: segment/kampanya/analitik okuma ve taslak oluşturma araçları (stdio + Streamable HTTP)",
+  "license": "MIT",
+  "homepage": "https://github.com/exec0de/herosignal/tree/main/packages/mcp-server#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/exec0de/herosignal.git",
+    "directory": "packages/mcp-server"
+  },
+  "bugs": {
+    "url": "https://github.com/exec0de/herosignal/issues"
+  },
+  "keywords": [
+    "herosignal",
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "ai",
+    "push",
+    "notifications"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -16,7 +38,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -28,5 +51,8 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "~1.31.0",
     "zod": "^4.6.5"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

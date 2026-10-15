@@ -117,7 +117,7 @@ export function createHeroSignalMcpServer(options: HeroSignalMcpOptions): McpSer
     'list_messages',
     {
       title: 'Mesajları listele',
-      description: 'Gönderilen mesajlar (API, kampanya, journey) ve teslim sayaçları. Gerekli kapsam: notifications:write (eski sağlayıcı "View notifications" eşdeğeri).',
+      description: 'Gönderilen mesajlar (API, kampanya, journey) ve teslim sayaçları. Gerekli kapsam: analytics:read veya notifications:write.',
       inputSchema: { app_id: appIdArg, limit: limitArg, cursor: cursorArg },
       annotations: READ,
     },
@@ -126,7 +126,7 @@ export function createHeroSignalMcpServer(options: HeroSignalMcpOptions): McpSer
 
   server.registerTool(
     'get_message',
-    { title: 'Mesaj oku', description: 'Mesaj durumu ve sayaçları. Gerekli kapsam: notifications:write.', inputSchema: { app_id: appIdArg, message_id: z.string().min(1).max(64) }, annotations: READ },
+    { title: 'Mesaj oku', description: 'Mesaj durumu ve sayaçları. Gerekli kapsam: analytics:read veya notifications:write.', inputSchema: { app_id: appIdArg, message_id: z.string().min(1).max(64) }, annotations: READ },
     async (a) => run(() => api.request('GET', `/v1/notifications/${encodeURIComponent(a.message_id)}${query({ app_id: decodeURIComponent(app(a.app_id)) })}`)),
   );
 
