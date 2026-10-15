@@ -1,0 +1,32 @@
+{
+  "name": "@herosignal/mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "HeroSignal MCP sunucusu: segment/kampanya/analitik okuma ve taslak oluşturma araçları (stdio + Streamable HTTP)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "herosignal-mcp": "./dist/stdio.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/stdio.js",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "~1.31.0",
+    "zod": "^4.6.5"
+  }
+}
