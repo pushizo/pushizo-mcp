@@ -26,4 +26,4 @@ const server = createHeroSignalMcpServer({
   defaultAppId: process.env.HEROSIGNAL_APP_ID?.trim() || undefined,
 });
 await server.connect(new StdioServerTransport());
-console.error(`HeroSignal MCP sunucusu (stdio) hazır: ${baseUrl}`);
+console.error(`Pushizo MCP sunucusu (stdio) hazır: ${baseUrl}`);

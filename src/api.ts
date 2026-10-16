@@ -1,5 +1,5 @@
 /**
- * MCP araçlarının HeroSignal public REST API'sine erişimi. Araçlar yalnızca bu arayüzü kullanır: yetki (API anahtarı
+ * MCP araçlarının Pushizo public REST API'sine erişimi. Araçlar yalnızca bu arayüzü kullanır: yetki (API anahtarı
  * kapsamları), kiracı izolasyonu ve RLS sunucuda, her çağrıda public API ile birebir aynı biçimde uygulanır.
  */
 export interface HeroSignalApi {

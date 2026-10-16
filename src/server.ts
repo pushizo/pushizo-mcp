@@ -17,7 +17,7 @@ const READ: ToolAnnotations = { readOnlyHint: true, destructiveHint: false, idem
 const WRITE: ToolAnnotations = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false };
 
 const WRITE_NOTE =
-  '[Onaylı mod — yazma] Bu araç HeroSignal’de kayıt oluşturur. Yalnızca TASLAK oluşturur, hiçbir mesaj göndermez veya zamanlamaz; ' +
+  '[Onaylı mod — yazma] Bu araç Pushizo’da kayıt oluşturur. Yalnızca TASLAK oluşturur, hiçbir mesaj göndermez veya zamanlamaz; ' +
   'API anahtarında `mcp:write` kapsamı olmalıdır. Çağırmadan önce kullanıcıdan açık onay alın.';
 
 const appIdArg = z.string().min(1).max(64).optional().describe('App kimliği (app_…). App’e bağlı anahtarda veya varsayılan app tanımlıysa gerekmez.');
@@ -46,16 +46,16 @@ function fail(err: unknown): CallToolResult {
 }
 
 /**
- * HeroSignal MCP sunucusu (ADR-0031 §6): segment/kampanya/mesaj/şablon/analitik okuma ve kampanya/segment taslağı
+ * Pushizo MCP sunucusu (ADR-0031 §6): segment/kampanya/mesaj/şablon/analitik okuma ve kampanya/segment taslağı
  * oluşturma araçları. Taşıma bağımsızdır (stdio, Streamable HTTP, testte in-memory).
  */
 export function createHeroSignalMcpServer(options: HeroSignalMcpOptions): McpServer {
   const server = new McpServer(
-    { name: MCP_SERVER_NAME, version: MCP_SERVER_VERSION, title: 'HeroSignal' },
+    { name: MCP_SERVER_NAME, version: MCP_SERVER_VERSION, title: 'Pushizo' },
     {
       instructions:
-        'HeroSignal bildirim platformu araçları. Okuma araçları serbesttir; create_* araçları yalnızca taslak oluşturur ve kullanıcının açık onayıyla çağrılmalıdır. ' +
-        'Gönderim, zamanlama ve silme bu sunucuda yoktur; taslaklar HeroSignal dashboard’undan gözden geçirilip gönderilir.',
+        'Pushizo bildirim platformu araçları. Okuma araçları serbesttir; create_* araçları yalnızca taslak oluşturur ve kullanıcının açık onayıyla çağrılmalıdır. ' +
+        'Gönderim, zamanlama ve silme bu sunucuda yoktur; taslaklar Pushizo dashboard’undan gözden geçirilip gönderilir.',
     },
   );
   const api = options.api;
