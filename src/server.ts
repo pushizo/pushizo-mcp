@@ -1,13 +1,13 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult, ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { HeroSignalApiError, type HeroSignalApi } from './api.js';
+import { PushizoApiError, type PushizoApi } from './api.js';
 
-export const MCP_SERVER_NAME = 'herosignal';
+export const MCP_SERVER_NAME = 'pushizo';
 export const MCP_SERVER_VERSION = '1.0.0';
 
-export interface HeroSignalMcpOptions {
-  api: HeroSignalApi;
+export interface PushizoMcpOptions {
+  api: PushizoApi;
   /** Araçta `app_id` verilmezse kullanılan app (app'e bağlı anahtarda anahtarın app'i). */
   defaultAppId?: string;
 }
@@ -37,7 +37,7 @@ function ok(data: unknown): CallToolResult {
 
 function fail(err: unknown): CallToolResult {
   const text =
-    err instanceof HeroSignalApiError
+    err instanceof PushizoApiError
       ? `${err.code} (HTTP ${err.status}): ${err.message}${err.status === 403 ? ' — API anahtarının kapsamlarını kontrol edin.' : ''}`
       : err instanceof Error
         ? err.message
@@ -49,7 +49,7 @@ function fail(err: unknown): CallToolResult {
  * Pushizo MCP sunucusu (ADR-0031 §6): segment/kampanya/mesaj/şablon/analitik okuma ve kampanya/segment taslağı
  * oluşturma araçları. Taşıma bağımsızdır (stdio, Streamable HTTP, testte in-memory).
  */
-export function createHeroSignalMcpServer(options: HeroSignalMcpOptions): McpServer {
+export function createPushizoMcpServer(options: PushizoMcpOptions): McpServer {
   const server = new McpServer(
     { name: MCP_SERVER_NAME, version: MCP_SERVER_VERSION, title: 'Pushizo' },
     {

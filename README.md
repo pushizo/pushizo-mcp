@@ -1,26 +1,26 @@
-# @herosignal/mcp-server
+# @pushizo/mcp-server
 
-HeroSignal için [Model Context Protocol](https://modelcontextprotocol.io) (MCP) sunucusu. Claude Desktop gibi yapay zekâ
+Pushizo için [Model Context Protocol](https://modelcontextprotocol.io) (MCP) sunucusu. Claude Desktop gibi yapay zekâ
 asistanları segment, kampanya, mesaj, şablon ve analitik verisini okuyabilir; onaylı modda yalnızca **taslak** kampanya ve
 segment oluşturabilir. Gönderim, zamanlama ve silme aracı yoktur; taslaklar dashboard'dan gözden geçirilip gönderilir.
 Node.js ≥ 20, ESM. Ayrıntılı rehber: [`docs/guides/mcp.md`](../../docs/guides/mcp.md).
 
-Araçlar yalnızca HeroSignal public REST API'sini çağırır: yetki (API anahtarı kapsamları), IP izin listesi ve kiracı
+Araçlar yalnızca Pushizo public REST API'sini çağırır: yetki (API anahtarı kapsamları), IP izin listesi ve kiracı
 izolasyonu her çağrıda public API ile birebir aynıdır.
 
 ## Kurulum (stdio)
 
 ```bash
-HEROSIGNAL_API_KEY=hs_live_… npx -y @herosignal/mcp-server
+PUSHIZO_API_KEY=hs_live_… npx -y @pushizo/mcp-server
 ```
 
-Paket `herosignal-mcp` komutunu da sağlar (`npm install -g @herosignal/mcp-server` sonrası `herosignal-mcp`).
+Paket `pushizo-mcp` komutunu da sağlar (`npm install -g @pushizo/mcp-server` sonrası `pushizo-mcp`).
 
 | Ortam değişkeni | Zorunlu | Açıklama |
 |---|---|---|
-| `HEROSIGNAL_API_KEY` | evet | `hs_live_…` API anahtarı. Okuma için `segments:read`, `analytics:read`; taslak araçları için ayrıca `mcp:write`. |
-| `HEROSIGNAL_API_URL` | hayır | API kök adresi; varsayılan `https://api.herosignal.io`. `https` olmalı; yerel geliştirmede `http://localhost:<port>` veya `http://127.0.0.1:<port>` kabul edilir. |
-| `HEROSIGNAL_APP_ID` | hayır | Araçta `app_id` verilmezse kullanılacak app. App'e bağlı anahtarda gerekmez. |
+| `PUSHIZO_API_KEY` | evet | `hs_live_…` API anahtarı. Okuma için `segments:read`, `analytics:read`; taslak araçları için ayrıca `mcp:write`. |
+| `PUSHIZO_API_URL` | hayır | API kök adresi; varsayılan `https://api.pushizo.com`. `https` olmalı; yerel geliştirmede `http://localhost:<port>` veya `http://127.0.0.1:<port>` kabul edilir. |
+| `PUSHIZO_APP_ID` | hayır | Araçta `app_id` verilmezse kullanılacak app. App'e bağlı anahtarda gerekmez. |
 
 stdout yalnızca MCP iletileri içindir; tanılama ve hata metinleri stderr'e yazılır. Anahtar eksikse veya adres
 geçersizse süreç 1 koduyla çıkar.
@@ -32,20 +32,20 @@ geçersizse süreç 1 koduyla çıkar.
 ```json
 {
   "mcpServers": {
-    "herosignal": {
+    "pushizo": {
       "command": "npx",
-      "args": ["-y", "@herosignal/mcp-server"],
+      "args": ["-y", "@pushizo/mcp-server"],
       "env": {
-        "HEROSIGNAL_API_KEY": "hs_live_…",
-        "HEROSIGNAL_API_URL": "https://api.herosignal.io",
-        "HEROSIGNAL_APP_ID": "app_…"
+        "PUSHIZO_API_KEY": "hs_live_…",
+        "PUSHIZO_API_URL": "https://api.pushizo.com",
+        "PUSHIZO_APP_ID": "app_…"
       }
     }
   }
 }
 ```
 
-Uzak kullanım için kurulum gerekmez: HeroSignal API'si aynı araçları Streamable HTTP ile `POST {API_URL}/mcp` adresinde
+Uzak kullanım için kurulum gerekmez: Pushizo API'si aynı araçları Streamable HTTP ile `POST {API_URL}/mcp` adresinde
 sunar (API anahtarı veya OAuth 2.1; bkz. rehber).
 
 ## Araçlar
@@ -65,11 +65,11 @@ segment dinamik) ve asistandan çağırmadan önce kullanıcının açık onayı
 ## Kütüphane olarak
 
 ```ts
-import { createFetchApi, createHeroSignalMcpServer } from '@herosignal/mcp-server';
+import { createFetchApi, createPushizoMcpServer } from '@pushizo/mcp-server';
 
-const server = createHeroSignalMcpServer({
-  api: createFetchApi({ baseUrl: 'https://api.herosignal.io', apiKey: process.env.HEROSIGNAL_API_KEY! }),
-  defaultAppId: process.env.HEROSIGNAL_APP_ID,
+const server = createPushizoMcpServer({
+  api: createFetchApi({ baseUrl: 'https://api.pushizo.com', apiKey: process.env.PUSHIZO_API_KEY! }),
+  defaultAppId: process.env.PUSHIZO_APP_ID,
 });
 // server.connect(<MCP taşıması>)
 ```
@@ -77,8 +77,8 @@ const server = createHeroSignalMcpServer({
 ## Depodan derleme
 
 ```bash
-npm run build --workspace @herosignal/mcp-server
-HEROSIGNAL_API_KEY=hs_live_… HEROSIGNAL_API_URL=http://localhost:4000 node packages/mcp-server/dist/stdio.js
+npm run build --workspace @pushizo/mcp-server
+PUSHIZO_API_KEY=hs_live_… PUSHIZO_API_URL=http://localhost:4000 node packages/mcp-server/dist/stdio.js
 npx vitest run --project unit packages/mcp-server
 ```
 

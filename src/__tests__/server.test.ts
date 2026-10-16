@@ -1,11 +1,11 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { describe, expect, it } from 'vitest';
-import { HeroSignalApiError, createFetchApi, createHeroSignalMcpServer, parseApiResponse, type HeroSignalApi } from '../index.js';
+import { PushizoApiError, createFetchApi, createPushizoMcpServer, parseApiResponse, type PushizoApi } from '../index.js';
 
 function fakeApi(handler: (method: string, path: string, body?: unknown) => unknown) {
   const calls: { method: string; path: string; body?: unknown }[] = [];
-  const api: HeroSignalApi = {
+  const api: PushizoApi = {
     async request<T>(method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: string, body?: unknown): Promise<T> {
       calls.push({ method, path, body });
       return handler(method, path, body) as T;
@@ -14,8 +14,8 @@ function fakeApi(handler: (method: string, path: string, body?: unknown) => unkn
   return { api, calls };
 }
 
-async function connect(api: HeroSignalApi, defaultAppId?: string) {
-  const server = createHeroSignalMcpServer({ api, defaultAppId });
+async function connect(api: PushizoApi, defaultAppId?: string) {
+  const server = createPushizoMcpServer({ api, defaultAppId });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   await server.connect(serverTransport);
   const client = new Client({ name: 'test', version: '1.0.0' });
@@ -25,7 +25,7 @@ async function connect(api: HeroSignalApi, defaultAppId?: string) {
 
 const text = (r: unknown) => ((r as { content: { type: string; text: string }[] }).content[0]!.text);
 
-describe('HeroSignal MCP sunucusu', () => {
+describe('Pushizo MCP sunucusu', () => {
   it('araç listesi: okuma araçları readOnlyHint, yazma araçları onaylı mod açıklaması ve destructiveHint=false', async () => {
     const client = await connect(fakeApi(() => ({})).api, 'app_1');
     const { tools } = await client.listTools();
@@ -87,7 +87,7 @@ describe('HeroSignal MCP sunucusu', () => {
 
   it('API hatası araç hatası olarak döner (yetki ipucu), app_id yoksa açıklayıcı hata', async () => {
     const client = await connect(fakeApi(() => {
-      throw new HeroSignalApiError(403, 'HS_FORBIDDEN', "Bu işlem için 'mcp:write' kapsamı gerekli.");
+      throw new PushizoApiError(403, 'HS_FORBIDDEN', "Bu işlem için 'mcp:write' kapsamı gerekli.");
     }).api);
     const denied = await client.callTool({ name: 'create_segment_draft', arguments: { app_id: 'app_1', name: 'X', definition: {} } });
     expect(denied.isError).toBe(true);

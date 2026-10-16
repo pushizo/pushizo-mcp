@@ -2,23 +2,23 @@
  * MCP araçlarının Pushizo public REST API'sine erişimi. Araçlar yalnızca bu arayüzü kullanır: yetki (API anahtarı
  * kapsamları), kiracı izolasyonu ve RLS sunucuda, her çağrıda public API ile birebir aynı biçimde uygulanır.
  */
-export interface HeroSignalApi {
+export interface PushizoApi {
   request<T = unknown>(method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: string, body?: unknown): Promise<T>;
 }
 
 /** API hata yanıtı (`{ error: { code, message } }`). */
-export class HeroSignalApiError extends Error {
+export class PushizoApiError extends Error {
   constructor(
     readonly status: number,
     readonly code: string,
     message: string,
   ) {
     super(message);
-    this.name = 'HeroSignalApiError';
+    this.name = 'PushizoApiError';
   }
 }
 
-/** HTTP yanıtını çözer; hata gövdesini `HeroSignalApiError`'a çevirir. */
+/** HTTP yanıtını çözer; hata gövdesini `PushizoApiError`'a çevirir. */
 export function parseApiResponse<T>(status: number, text: string): T {
   let json: unknown;
   try {
@@ -28,11 +28,11 @@ export function parseApiResponse<T>(status: number, text: string): T {
   }
   if (status >= 200 && status < 300) return json as T;
   const err = (json as { error?: { code?: string; message?: string } } | null)?.error;
-  throw new HeroSignalApiError(status, err?.code ?? `HTTP_${status}`, err?.message ?? (text.slice(0, 300) || `HTTP ${status}`));
+  throw new PushizoApiError(status, err?.code ?? `HTTP_${status}`, err?.message ?? (text.slice(0, 300) || `HTTP ${status}`));
 }
 
 export interface FetchApiOptions {
-  /** API kök adresi (ör. `https://api.herosignal.io`). */
+  /** API kök adresi (ör. `https://api.pushizo.com`). */
   baseUrl: string;
   /** `hs_live_…` API anahtarı (Bearer). */
   apiKey: string;
@@ -42,7 +42,7 @@ export interface FetchApiOptions {
 }
 
 /** stdio sunucusu için: API'ye HTTPS üzerinden Bearer anahtarla istek. */
-export function createFetchApi(options: FetchApiOptions): HeroSignalApi {
+export function createFetchApi(options: FetchApiOptions): PushizoApi {
   const base = options.baseUrl.replace(/\/$/, '');
   const fetchImpl = options.fetchImpl ?? fetch;
   return {
@@ -52,7 +52,7 @@ export function createFetchApi(options: FetchApiOptions): HeroSignalApi {
         headers: {
           authorization: `Bearer ${options.apiKey}`,
           accept: 'application/json',
-          'user-agent': options.userAgent ?? 'herosignal-mcp',
+          'user-agent': options.userAgent ?? 'pushizo-mcp',
           ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
         },
         body: body !== undefined ? JSON.stringify(body) : undefined,

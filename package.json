@@ -1,19 +1,19 @@
 {
-  "name": "@herosignal/mcp-server",
+  "name": "@pushizo/mcp-server",
   "version": "0.1.0",
-  "description": "HeroSignal MCP sunucusu: segment/kampanya/analitik okuma ve taslak oluşturma araçları (stdio + Streamable HTTP)",
+  "description": "Pushizo MCP sunucusu: segment/kampanya/analitik okuma ve taslak oluşturma araçları (stdio + Streamable HTTP)",
   "license": "MIT",
-  "homepage": "https://github.com/exec0de/herosignal/tree/main/packages/mcp-server#readme",
+  "homepage": "https://github.com/exec0de/pushizo/tree/main/packages/mcp-server#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/exec0de/herosignal.git",
+    "url": "git+https://github.com/exec0de/pushizo.git",
     "directory": "packages/mcp-server"
   },
   "bugs": {
-    "url": "https://github.com/exec0de/herosignal/issues"
+    "url": "https://github.com/exec0de/pushizo/issues"
   },
   "keywords": [
-    "herosignal",
+    "pushizo",
     "mcp",
     "model-context-protocol",
     "claude",
@@ -29,7 +29,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "herosignal-mcp": "./dist/stdio.js"
+    "pushizo-mcp": "./dist/stdio.js"
   },
   "exports": {
     ".": {
