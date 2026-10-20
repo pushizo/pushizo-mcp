@@ -3,14 +3,14 @@
   "version": "0.1.0",
   "description": "Pushizo MCP sunucusu: segment/kampanya/analitik okuma ve taslak oluşturma araçları (stdio + Streamable HTTP)",
   "license": "MIT",
-  "homepage": "https://github.com/exec0de/pushizo/tree/main/packages/mcp-server#readme",
+  "homepage": "https://docs.pushizo.com/docs/integrations/mcp",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/exec0de/pushizo.git",
     "directory": "packages/mcp-server"
   },
   "bugs": {
-    "url": "https://github.com/exec0de/pushizo/issues"
+    "email": "support@pushizo.com"
   },
   "keywords": [
     "pushizo",
