@@ -19,7 +19,7 @@
 **Install from GitHub until then · O zamana kadar GitHub'dan kurulum:**
 
 ```bash
-npm install -g https://github.com/pushizo/pushizo-mcp/releases/download/v0.1.0/pushizo-mcp-server-0.1.0.tgz
+npm install -g --allow-remote=root https://github.com/pushizo/pushizo-mcp/releases/download/v0.1.0/pushizo-mcp-server-0.1.0.tgz
 pushizo-mcp   # PUSHIZO_API_KEY=hs_live_… ortamıyla / with PUSHIZO_API_KEY set
 ```
 
