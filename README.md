@@ -13,8 +13,17 @@
 
 **Pushizo MCP server** — Model Context Protocol server for Pushizo. AI clients such as Claude, Cursor and VS Code can read segments, campaigns, messages, templates and analytics, and create draft campaigns and segments with explicit approval. There are no send, schedule or delete tools. The remote server works without installation (OAuth 2.1); the local server runs over stdio.
 
-> **Status:** Publishing to npm is in progress; until then you can build from this repository.<br>
-> **Durum:** npm yayını hazırlanıyor; o zamana kadar bu depodan derleyerek kullanabilirsiniz.
+> **Status:** Publishing to npm is in progress.<br>
+> **Durum:** npm yayını hazırlanıyor.
+
+**Install from GitHub until then · O zamana kadar GitHub'dan kurulum:**
+
+```bash
+npm install -g https://github.com/pushizo/pushizo-mcp/releases/download/v0.1.0/pushizo-mcp-server-0.1.0.tgz
+pushizo-mcp   # PUSHIZO_API_KEY=hs_live_… ortamıyla / with PUSHIZO_API_KEY set
+```
+
+**After publication · Yayından sonra:**
 
 ```bash
 # Remote server (no install)
