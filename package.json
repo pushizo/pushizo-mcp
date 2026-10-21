@@ -1,6 +1,7 @@
 {
   "name": "@pushizo/mcp-server",
   "version": "0.1.0",
+  "mcpName": "com.pushizo/mcp",
   "description": "Pushizo MCP sunucusu: segment/kampanya/analitik okuma ve taslak oluşturma araçları (stdio + Streamable HTTP)",
   "license": "MIT",
   "homepage": "https://docs.pushizo.com/docs/integrations/mcp",
@@ -39,7 +40,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "server.json"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

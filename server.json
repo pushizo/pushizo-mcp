@@ -1,0 +1,49 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.pushizo/mcp",
+  "title": "Pushizo",
+  "description": "Push, email, SMS and in-app messaging: segments, campaigns, analytics and draft tools.",
+  "websiteUrl": "https://docs.pushizo.com/docs/integrations/mcp",
+  "repository": {
+    "url": "https://github.com/pushizo/pushizo-mcp",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://api.pushizo.com/mcp"
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@pushizo/mcp-server",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "PUSHIZO_API_KEY",
+          "description": "Pushizo API key (hs_live_…) with segments:read and analytics:read scopes; mcp:write for drafts",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "PUSHIZO_API_URL",
+          "description": "API base URL (default https://api.pushizo.com)",
+          "isRequired": false,
+          "format": "string"
+        },
+        {
+          "name": "PUSHIZO_APP_ID",
+          "description": "Default app id (app_…) when a tool call omits app_id",
+          "isRequired": false,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}
