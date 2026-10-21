@@ -6,10 +6,10 @@
   "homepage": "https://docs.pushizo.com/docs/integrations/mcp",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/exec0de/pushizo.git",
-    "directory": "packages/mcp-server"
+    "url": "git+https://github.com/pushizo/pushizo-mcp.git"
   },
   "bugs": {
+    "url": "https://github.com/pushizo/pushizo-mcp/issues",
     "email": "support@pushizo.com"
   },
   "keywords": [
