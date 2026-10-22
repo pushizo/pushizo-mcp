@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "pushizo": {
+      "url": "https://api.pushizo.com/mcp"
+    }
+  }
+}
