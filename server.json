@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "com.pushizo/mcp",
   "title": "Pushizo",
-  "description": "Push, email, SMS and in-app messaging: segments, campaigns, analytics and draft tools.",
+  "description": "Push, email, SMS, in-app and journeys. 54 tools: reads and drafts; only test sends.",
   "websiteUrl": "https://docs.pushizo.com/docs/integrations/mcp",
   "repository": {
     "url": "https://github.com/pushizo/pushizo-mcp",
@@ -26,7 +26,7 @@
       "environmentVariables": [
         {
           "name": "PUSHIZO_API_KEY",
-          "description": "Pushizo API key (hs_live_…) with segments:read and analytics:read scopes; mcp:write for drafts",
+          "description": "Pushizo API key (hs_live_…). segments:read, analytics:read, users:read for reads; mcp:write for drafts and test sends",
           "isRequired": true,
           "isSecret": true,
           "format": "string"

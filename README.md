@@ -13,18 +13,6 @@
 
 **Pushizo MCP server** — Model Context Protocol server for Pushizo. AI clients such as Claude, Cursor and VS Code can read segments, campaigns, messages, templates and analytics, and create draft campaigns and segments with explicit approval. There are no send, schedule or delete tools. The remote server works without installation (OAuth 2.1); the local server runs over stdio.
 
-> **Status:** Publishing to npm is in progress.<br>
-> **Durum:** npm yayını hazırlanıyor.
-
-**Install from GitHub until then · O zamana kadar GitHub'dan kurulum:**
-
-```bash
-npm install -g --allow-remote=root https://github.com/pushizo/pushizo-mcp/releases/download/v0.1.0/pushizo-mcp-server-0.1.0.tgz
-pushizo-mcp   # PUSHIZO_API_KEY=hs_live_… ortamıyla / with PUSHIZO_API_KEY set
-```
-
-**After publication · Yayından sonra:**
-
 ```bash
 # Remote server (no install)
 claude mcp add --transport http pushizo https://api.pushizo.com/mcp
@@ -102,7 +90,7 @@ Paket `pushizo-mcp` komutunu da sağlar (`npm install -g @pushizo/mcp-server` so
 
 | Ortam değişkeni | Zorunlu | Açıklama |
 |---|---|---|
-| `PUSHIZO_API_KEY` | evet | `hs_live_…` API anahtarı. Okuma için `segments:read`, `analytics:read`; taslak araçları için ayrıca `mcp:write`. |
+| `PUSHIZO_API_KEY` | evet | `hs_live_…` API anahtarı. Okuma için `segments:read`, `analytics:read`; kullanıcı araçları için `users:read`; taslak ve test gönderimi için `mcp:write`. |
 | `PUSHIZO_API_URL` | hayır | API kök adresi; varsayılan `https://api.pushizo.com`. `https` olmalı; yerel geliştirmede `http://localhost:<port>` veya `http://127.0.0.1:<port>` kabul edilir. |
 | `PUSHIZO_APP_ID` | hayır | Araçta `app_id` verilmezse kullanılacak app. App'e bağlı anahtarda gerekmez. |
 
@@ -131,17 +119,20 @@ geçersizse süreç 1 koduyla çıkar.
 
 ## Araçlar
 
+54 araç. Ayrıntılı liste `docs/guides/mcp.md` içindedir. Özet:
+
 | Araç | Tür | Gerekli kapsam |
 |---|---|---|
-| `list_segments`, `get_segment` | okuma | `segments:read` |
-| `list_campaigns`, `get_campaign`, `list_campaign_messages` | okuma | `analytics:read` |
-| `get_analytics_summary`, `list_templates` | okuma | `analytics:read` |
+| `list_segments`, `get_segment`, `preview_segment`, `estimate_segment`, `list_segment_campaigns` | okuma | `segments:read` |
+| Kampanya, şablon, journey, analitik, in-app, web büyüme ve gelen kutusu okuma araçları | okuma | `analytics:read` |
 | `list_messages`, `get_message` | okuma | `analytics:read` veya `notifications:write` |
-| `create_campaign_draft` | onaylı mod — yazma | `mcp:write` |
-| `create_segment_draft` | onaylı mod — yazma | `mcp:write` |
+| `get_app`, `search_users`, `get_user`, `get_user_journeys`, `get_user_preferences`, `list_categories` | okuma | `users:read` |
+| `create_campaign_draft`, `create_segment_draft`, `create_template_draft`, `create_journey_draft`, `create_in_app_draft` | onaylı mod — taslak | `mcp:write` |
+| `send_test_notification` | onaylı mod — yalnız test cihazı | `mcp:write` |
 
-`admin` kapsamı tüm araçları açar. Yazma araçları yalnızca taslak oluşturur (kampanya her zaman `draft`, `mcp` etiketiyle;
-segment dinamik) ve asistandan çağırmadan önce kullanıcının açık onayını alması istenir.
+`admin` kapsamı tüm araçları açar. Taslak araçları gönderim, zamanlama ve yayın yapmaz (kampanya ve journey/in-app
+`draft`, şablon ve kampanyaya `mcp` etiketi, segment dinamik). `send_test_notification` gerçek kitleye gidemez.
+Asistandan çağırmadan önce kullanıcının açık onayı istenir.
 
 ## Kütüphane olarak
 

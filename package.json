@@ -2,7 +2,7 @@
   "name": "@pushizo/mcp-server",
   "version": "0.1.0",
   "mcpName": "com.pushizo/mcp",
-  "description": "Pushizo MCP sunucusu: segment/kampanya/analitik okuma ve taslak oluşturma araçları (stdio + Streamable HTTP)",
+  "description": "Pushizo MCP sunucusu: 54 okuma ve taslak aracı (stdio + Streamable HTTP). Test gönderimi yalnız test cihazlarına gider.",
   "license": "MIT",
   "homepage": "https://docs.pushizo.com/docs/integrations/mcp",
   "repository": {
@@ -51,7 +51,7 @@
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "~1.31.0",
+    "@modelcontextprotocol/sdk": "~1.32.1",
     "zod": "^4.6.5"
   },
   "engines": {

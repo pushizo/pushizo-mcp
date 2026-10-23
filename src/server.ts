@@ -1,10 +1,12 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { CallToolResult, ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { PushizoApiError, type PushizoApi } from './api.js';
+import type { PushizoApi } from './api.js';
+import { READ, WRITE, WRITE_NOTE, appIdArg, createToolKit, cursorArg, limitArg, query } from './kit.js';
+import { registerReadTools } from './tools-read.js';
+import { registerWriteTools } from './tools-write.js';
 
 export const MCP_SERVER_NAME = 'pushizo';
-export const MCP_SERVER_VERSION = '1.0.0';
+export const MCP_SERVER_VERSION = '1.1.0';
 
 export interface PushizoMcpOptions {
   api: PushizoApi;
@@ -12,65 +14,23 @@ export interface PushizoMcpOptions {
   defaultAppId?: string;
 }
 
-const READ: ToolAnnotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
-/** Yazma araçları: yalnızca taslak oluşturur (gönderim/silme yok), sunucuda `mcp:write` kapsamı zorunlu. */
-const WRITE: ToolAnnotations = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false };
-
-const WRITE_NOTE =
-  '[Onaylı mod — yazma] Bu araç Pushizo’da kayıt oluşturur. Yalnızca TASLAK oluşturur, hiçbir mesaj göndermez veya zamanlamaz; ' +
-  'API anahtarında `mcp:write` kapsamı olmalıdır. Çağırmadan önce kullanıcıdan açık onay alın.';
-
-const appIdArg = z.string().min(1).max(64).optional().describe('App kimliği (app_…). App’e bağlı anahtarda veya varsayılan app tanımlıysa gerekmez.');
-const limitArg = z.number().int().min(1).max(100).optional().describe('Sayfa boyutu (varsayılan 20).');
-const cursorArg = z.string().max(500).optional().describe('Önceki yanıttaki `next_cursor` değeri.');
-
-function query(params: Record<string, string | number | undefined>): string {
-  const q = new URLSearchParams();
-  for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== '') q.set(k, String(v));
-  const s = q.toString();
-  return s ? `?${s}` : '';
-}
-
-function ok(data: unknown): CallToolResult {
-  return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
-}
-
-function fail(err: unknown): CallToolResult {
-  const text =
-    err instanceof PushizoApiError
-      ? `${err.code} (HTTP ${err.status}): ${err.message}${err.status === 403 ? ' — API anahtarının kapsamlarını kontrol edin.' : ''}`
-      : err instanceof Error
-        ? err.message
-        : String(err);
-  return { isError: true, content: [{ type: 'text', text }] };
-}
-
 /**
- * Pushizo MCP sunucusu (ADR-0031 §6): segment/kampanya/mesaj/şablon/analitik okuma ve kampanya/segment taslağı
- * oluşturma araçları. Taşıma bağımsızdır (stdio, Streamable HTTP, testte in-memory).
+ * Pushizo MCP sunucusu (ADR-0031 §6, ADR-0043): segment, kampanya, mesaj, şablon, journey, kullanıcı, olay, analitik,
+ * in-app ve web büyüme okuma araçları; kampanya/segment/şablon/journey/in-app taslağı ve test cihazlarına test gönderimi.
+ * Taşıma bağımsızdır (stdio, Streamable HTTP, testte in-memory).
  */
 export function createPushizoMcpServer(options: PushizoMcpOptions): McpServer {
   const server = new McpServer(
     { name: MCP_SERVER_NAME, version: MCP_SERVER_VERSION, title: 'Pushizo' },
     {
       instructions:
-        'Pushizo bildirim platformu araçları. Okuma araçları serbesttir; create_* araçları yalnızca taslak oluşturur ve kullanıcının açık onayıyla çağrılmalıdır. ' +
-        'Gönderim, zamanlama ve silme bu sunucuda yoktur; taslaklar Pushizo dashboard’undan gözden geçirilip gönderilir.',
+        'Pushizo bildirim platformu araçları. Okuma araçları serbesttir; create_* araçları yalnızca taslak oluşturur, send_test_notification yalnızca ' +
+        'test cihazlarına gönderir ve ikisi de kullanıcının açık onayıyla çağrılmalıdır. Gerçek kitleye gönderim, zamanlama, yayın ve silme bu sunucuda ' +
+        'yoktur; taslaklar Pushizo dashboard’undan gözden geçirilip gönderilir. Analiz için önce list_* ile kimlikleri bulun, sonra get_* ve rapor araçlarını kullanın.',
     },
   );
-  const api = options.api;
-  const app = (appId?: string): string => {
-    const id = appId ?? options.defaultAppId;
-    if (!id) throw new Error('app_id gerekli (anahtar organizasyon geneliyse araçta app_id verin).');
-    return encodeURIComponent(id);
-  };
-  const run = async (fn: () => Promise<unknown>): Promise<CallToolResult> => {
-    try {
-      return ok(await fn());
-    } catch (err) {
-      return fail(err);
-    }
-  };
+  const kit = createToolKit(options.api, options.defaultAppId);
+  const { api, app, run } = kit;
 
   server.registerTool(
     'list_segments',
@@ -210,5 +170,7 @@ export function createPushizoMcpServer(options: PushizoMcpOptions): McpServer {
     async (a) => run(() => api.request('POST', `/v1/apps/${app(a.app_id)}/mcp/segment-drafts`, { name: a.name, ...(a.description ? { description: a.description } : {}), definition: a.definition })),
   );
 
+  registerReadTools(server, kit);
+  registerWriteTools(server, kit);
   return server;
 }
