@@ -1,7 +1,8 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { PushizoApiError, createFetchApi, createPushizoMcpServer, parseApiResponse, type PushizoApi } from '../index.js';
+import { MCP_SERVER_VERSION, PushizoApiError, createFetchApi, createPushizoMcpServer, parseApiResponse, type PushizoApi } from '../index.js';
 
 function fakeApi(handler: (method: string, path: string, body?: unknown) => unknown) {
   const calls: { method: string; path: string; body?: unknown }[] = [];
@@ -14,8 +15,8 @@ function fakeApi(handler: (method: string, path: string, body?: unknown) => unkn
   return { api, calls };
 }
 
-async function connect(api: PushizoApi, defaultAppId?: string) {
-  const server = createPushizoMcpServer({ api, defaultAppId });
+async function connect(api: PushizoApi, defaultAppId?: string, scopes?: readonly string[]) {
+  const server = createPushizoMcpServer({ api, defaultAppId, scopes });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   await server.connect(serverTransport);
   const client = new Client({ name: 'test', version: '1.0.0' });
@@ -30,9 +31,9 @@ describe('Pushizo MCP sunucusu', () => {
     const client = await connect(fakeApi(() => ({})).api, 'app_1');
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    // ADR-0043: 11 → 54 araç (eski sağlayıcı MCP'sinin 43 aracından geniş; gerçek kitleye gönderim/silme yok).
-    expect(names).toHaveLength(54);
-    expect(new Set(names).size).toBe(54);
+    // ADR-0043: 11 → 54 araç; plan 15 Faz 51: +19 içgörü okuma aracı = 73 (gerçek kitleye gönderim/silme yok).
+    expect(names).toHaveLength(73);
+    expect(new Set(names).size).toBe(73);
     expect(names).toEqual(
       expect.arrayContaining([
         'create_campaign_draft',
@@ -227,6 +228,144 @@ describe('Pushizo MCP sunucusu', () => {
     const noApp = await client.callTool({ name: 'list_segments', arguments: {} });
     expect(noApp.isError).toBe(true);
     expect(text(noApp)).toContain('app_id gerekli');
+  });
+
+  it('kimlik ve yol parçalarında `.`/`..` reddedilir; istek API ucuna hiç gitmez (ADR-0076 §5)', async () => {
+    const { api, calls } = fakeApi(() => ({}));
+    const client = await connect(api, 'app_1');
+    const attempts: [string, Record<string, unknown>][] = [
+      ['get_segment', { segment_id: '..' }],
+      ['get_campaign', { campaign_id: '.' }],
+      ['list_segments', { app_id: '..' }],
+      ['get_message', { message_id: 'a/b' }],
+      ['get_template', { template_id: '..' }],
+      ['get_user', { label: '..', value: '..' }],
+      ['get_user', { label: 'external_id', value: '..' }],
+    ];
+    for (const [name, args] of attempts) {
+      const result = await client.callTool({ name, arguments: args });
+      expect(result.isError, `${name} ${JSON.stringify(args)}`).toBe(true);
+    }
+    expect(calls).toHaveLength(0);
+    // Nokta içeren sıradan değerler geçerlidir (ör. e-posta biçimli external_id).
+    const ok = await client.callTool({ name: 'get_user', arguments: { label: 'external_id', value: 'a.b@example.com' } });
+    expect(ok.isError).toBeFalsy();
+    expect(calls[0]!.path).toBe('/v1/apps/app_1/users/by/external_id/a.b%40example.com');
+  });
+
+  it('serverInfo sürümü paket sürümüyle aynıdır', async () => {
+    const pkg = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')) as { version: string };
+    expect(MCP_SERVER_VERSION).toBe(pkg.version);
+    const client = await connect(fakeApi(() => ({})).api, 'app_1');
+    expect(client.getServerVersion()?.version).toBe(pkg.version);
+  });
+
+  it('ilk okuma araçları doğru yolları kullanır', async () => {
+    const { api, calls } = fakeApi(() => ({ ok: true }));
+    const client = await connect(api, 'app_1');
+    const callAll: [string, Record<string, unknown>][] = [
+      ['get_segment', { segment_id: 'seg_1' }],
+      ['list_campaigns', { limit: 2 }],
+      ['list_campaign_messages', { campaign_id: 'cmp_1' }],
+      ['get_message', { message_id: 'msg_1' }],
+      ['list_templates', { q: 'hoş', channel: 'email' }],
+    ];
+    for (const [name, args] of callAll) expect((await client.callTool({ name, arguments: args })).isError, name).toBeFalsy();
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual([
+      'GET /v1/apps/app_1/segments/seg_1',
+      'GET /v1/apps/app_1/campaigns?limit=2',
+      'GET /v1/apps/app_1/campaigns/cmp_1/messages',
+      'GET /v1/notifications/msg_1?app_id=app_1',
+      'GET /v1/apps/app_1/templates?q=ho%C5%9F&channel=email',
+    ]);
+  });
+
+  it('içgörü araçları (Faz 51) doğru public uçları, sorgu ve gövdeyi kullanır', async () => {
+    const { api, calls } = fakeApi(() => ({ ok: true }));
+    const client = await connect(api, 'app_1');
+    const callAll: [string, Record<string, unknown>][] = [
+      ['get_rfm_overview', {}],
+      ['get_rfm_transitions', { from: '2026-10-01', to: '2026-10-31' }],
+      ['list_rfm_users', { segment: 'at_risk', limit: 10, cursor: 'c1' }],
+      ['list_predictions', {}],
+      ['get_prediction', { prediction_id: 'prd_1' }],
+      ['list_prediction_users', { prediction_id: 'prd_1', bucket: 'high' }],
+      ['list_feature_flags', {}],
+      ['get_feature_flag', { flag_id: 'flg_1' }],
+      ['run_path_analysis', { event: 'add_to_cart', direction: 'before', depth: 2 }],
+      ['run_report', { source: 'deliveries', metrics: ['sent', 'open_rate'], dimensions: ['channel'], days: 7 }],
+      ['list_saved_reports', {}],
+      ['get_saved_report', { report_id: 'rep_1' }],
+      ['list_decision_agents', {}],
+      ['get_decision_agent_report', { agent_id: 'dag_1' }],
+      ['list_catalogs', {}],
+      ['get_recommendations', { catalog_id: 'cat_1', strategy: 'similar', item_id: 'sku-1', limit: 5 }],
+      ['get_channel_score_overview', {}],
+      ['list_geofences', {}],
+      ['list_wallet_templates', {}],
+    ];
+    for (const [name, args] of callAll) expect((await client.callTool({ name, arguments: args })).isError, name).toBeFalsy();
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual([
+      'GET /v1/apps/app_1/rfm/overview',
+      'GET /v1/apps/app_1/rfm/transitions?from=2026-10-01&to=2026-10-31',
+      'GET /v1/apps/app_1/rfm/users?segment=at_risk&limit=10&cursor=c1',
+      'GET /v1/apps/app_1/predictions',
+      'GET /v1/apps/app_1/predictions/prd_1',
+      'GET /v1/apps/app_1/predictions/prd_1/users?bucket=high',
+      'GET /v1/apps/app_1/feature-flags',
+      'GET /v1/apps/app_1/feature-flags/flg_1',
+      'POST /v1/apps/app_1/analytics/paths',
+      'POST /v1/apps/app_1/analytics/reports/run',
+      'GET /v1/apps/app_1/analytics/reports',
+      'GET /v1/apps/app_1/analytics/reports/rep_1',
+      'GET /v1/apps/app_1/decision-agents',
+      'GET /v1/apps/app_1/decision-agents/dag_1/report',
+      'GET /v1/apps/app_1/catalogs',
+      'GET /v1/apps/app_1/catalogs/cat_1/recommendations?strategy=similar&limit=5&item_id=sku-1',
+      'GET /v1/apps/app_1/channel-scores/overview',
+      'GET /v1/apps/app_1/geofences',
+      'GET /v1/apps/app_1/wallet/templates',
+    ]);
+    expect(calls[8]!.body).toEqual({ event: 'add_to_cart', direction: 'before', depth: 2 });
+    expect(calls[9]!.body).toEqual({ source: 'deliveries', metrics: ['sent', 'open_rate'], dimensions: ['channel'], days: 7, format: 'json' });
+  });
+
+  it('şema reddi: sınır dışı ve biçimsiz girdiler API çağrısı yapılmadan döner', async () => {
+    const { api, calls } = fakeApi(() => ({}));
+    const client = await connect(api, 'app_1');
+    const attempts: [string, Record<string, unknown>][] = [
+      ['list_segments', { limit: 101 }],
+      ['get_rfm_transitions', { from: '01.10.2026' }],
+      ['list_rfm_users', { segment: 'yok' }],
+      ['run_report', { source: 'deliveries', metrics: [] }],
+      ['get_recommendations', { catalog_id: 'cat_1', strategy: 'popular', limit: 21 }],
+    ];
+    for (const [name, args] of attempts) expect((await client.callTool({ name, arguments: args })).isError, name).toBe(true);
+    expect(calls).toHaveLength(0);
+  });
+
+  it('yazma araçları yalnızca kapsam `mcp:write` veya `admin` içeriyorsa listelenir; kapsam bilinmiyorsa hepsi', async () => {
+    const names = async (scopes?: readonly string[]) => (await (await connect(fakeApi(() => ({})).api, 'app_1', scopes)).listTools()).tools.map((t) => t.name);
+    const writeTools = ['create_campaign_draft', 'create_segment_draft', 'create_template_draft', 'create_journey_draft', 'create_in_app_draft', 'send_test_notification'];
+    const readOnly = await names(['analytics:read', 'users:read']);
+    expect(readOnly).toHaveLength(73 - writeTools.length);
+    for (const tool of writeTools) expect(readOnly).not.toContain(tool);
+    expect(await names(['mcp:write'])).toEqual(expect.arrayContaining(writeTools));
+    expect(await names(['admin'])).toEqual(expect.arrayContaining(writeTools));
+    expect(await names()).toHaveLength(73);
+  });
+
+  it('hız sınırı ve zaman aşımı hataları yeniden deneme ipucuyla döner', async () => {
+    const limited = await connect(fakeApi(() => {
+      throw new PushizoApiError(429, 'HS_RATE_LIMITED', 'Çok fazla istek.');
+    }).api, 'app_1');
+    expect(text(await limited.callTool({ name: 'list_predictions', arguments: {} }))).toContain('bekleyip yeniden deneyin');
+    const slow = await connect(fakeApi(() => {
+      throw new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+    }).api, 'app_1');
+    const timedOut = await slow.callTool({ name: 'run_report', arguments: { source: 'events', metrics: ['count'] } });
+    expect(timedOut.isError).toBe(true);
+    expect(text(timedOut)).toContain('zaman aşımına uğradı');
   });
 
   it('fetch istemcisi Bearer anahtarı gönderir ve hata gövdesini çözer', async () => {

@@ -119,14 +119,15 @@ geçersizse süreç 1 koduyla çıkar.
 
 ## Araçlar
 
-54 araç. Ayrıntılı liste `docs/guides/mcp.md` içindedir. Özet:
+73 araç. Ayrıntılı liste `docs/guides/mcp.md` içindedir. Özet:
 
 | Araç | Tür | Gerekli kapsam |
 |---|---|---|
 | `list_segments`, `get_segment`, `preview_segment`, `estimate_segment`, `list_segment_campaigns` | okuma | `segments:read` |
 | Kampanya, şablon, journey, analitik, in-app, web büyüme ve gelen kutusu okuma araçları | okuma | `analytics:read` |
+| RFM, öngörü, karar ajanı, kanal skoru, özellik bayrağı, rapor, yol analizi, katalog ve öneri, bölge araçları | okuma | `analytics:read` |
 | `list_messages`, `get_message` | okuma | `analytics:read` veya `notifications:write` |
-| `get_app`, `search_users`, `get_user`, `get_user_journeys`, `get_user_preferences`, `list_categories` | okuma | `users:read` |
+| `get_app`, `search_users`, `get_user`, `get_user_journeys`, `get_user_preferences`, `list_categories`, `list_rfm_users`, `list_prediction_users`, `list_wallet_templates` | okuma | `users:read` |
 | `create_campaign_draft`, `create_segment_draft`, `create_template_draft`, `create_journey_draft`, `create_in_app_draft` | onaylı mod — taslak | `mcp:write` |
 | `send_test_notification` | onaylı mod — yalnız test cihazı | `mcp:write` |
 

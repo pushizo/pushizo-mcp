@@ -11,10 +11,17 @@ export const WRITE_NOTE =
   '[Onaylı mod — yazma] Bu araç Pushizo’da kayıt oluşturur. Yalnızca TASLAK oluşturur, hiçbir mesaj göndermez veya zamanlamaz; ' +
   'API anahtarında `mcp:write` kapsamı olmalıdır. Çağırmadan önce kullanıcıdan açık onay alın.';
 
-export const appIdArg = z.string().min(1).max(64).optional().describe('App kimliği (app_…). App’e bağlı anahtarda veya varsayılan app tanımlıysa gerekmez.');
+/**
+ * Kimlikler URL yoluna yazılır: `.` ve `..` WHATWG URL çözümlemesinde başka uca kayar, `/` yolu böler. Desen bunları
+ * dışarıda bırakır (ADR-0076 §5).
+ */
+const ID_PATTERN = /^(?!\.{1,2}$)[A-Za-z0-9_.:-]+$/;
+const ID_MESSAGE = 'Kimlik yalnızca harf, rakam, `_`, `-`, `.` ve `:` içerebilir.';
+
+export const appIdArg = z.string().min(1).max(64).regex(ID_PATTERN, ID_MESSAGE).optional().describe('App kimliği (app_…). App’e bağlı anahtarda veya varsayılan app tanımlıysa gerekmez.');
 export const limitArg = z.number().int().min(1).max(100).optional().describe('Sayfa boyutu (varsayılan 20).');
 export const cursorArg = z.string().max(500).optional().describe('Önceki yanıttaki `next_cursor` değeri.');
-export const idArg = (what: string) => z.string().min(1).max(64).describe(`${what} kimliği`);
+export const idArg = (what: string) => z.string().min(1).max(64).regex(ID_PATTERN, ID_MESSAGE).describe(`${what} kimliği`);
 export const fromArg = z.string().max(40).optional().describe('ISO-8601 başlangıç (ör. 2026-10-01T00:00:00Z); verilmezse rapor varsayılanı.');
 export const toArg = z.string().max(40).optional().describe('ISO-8601 bitiş.');
 /** Segment/arama tanımı: all/any/none koşul grupları (segment taslağıyla aynı biçim). */
@@ -33,12 +40,20 @@ export function ok(data: unknown): CallToolResult {
   return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
 }
 
+/** Sık görülen durum kodları için modelin sonraki adımını belirleyen ipucu. */
+const HTTP_HINTS: Record<number, string> = {
+  403: ' — API anahtarının kapsamlarını kontrol edin.',
+  429: ' — Hız sınırına takıldı; birkaç saniye bekleyip yeniden deneyin, art arda çağrıları azaltın.',
+};
+
 export function fail(err: unknown): CallToolResult {
   const text =
     err instanceof PushizoApiError
-      ? `${err.code} (HTTP ${err.status}): ${err.message}${err.status === 403 ? ' — API anahtarının kapsamlarını kontrol edin.' : ''}`
+      ? `${err.code} (HTTP ${err.status}): ${err.message}${HTTP_HINTS[err.status] ?? ''}`
       : err instanceof Error
-        ? err.message
+        ? err.name === 'TimeoutError' || err.name === 'AbortError'
+          ? 'İstek zaman aşımına uğradı; daha dar bir tarih aralığı veya daha küçük `limit` ile yeniden deneyin.'
+          : err.message
         : String(err);
   return { isError: true, content: [{ type: 'text', text }] };
 }
@@ -55,7 +70,7 @@ export function createToolKit(api: PushizoApi, defaultAppId?: string): ToolKit {
   function app(appId?: string): string {
     const id = appId ?? defaultAppId;
     if (!id) throw new Error('app_id gerekli (anahtar organizasyon geneliyse araçta app_id verin).');
-    return encodeURIComponent(id);
+    return seg(id);
   }
   async function run(fn: () => Promise<unknown>): Promise<CallToolResult> {
     try {
@@ -67,5 +82,11 @@ export function createToolKit(api: PushizoApi, defaultAppId?: string): ToolKit {
   return { api, app, run };
 }
 
-/** Yol parçası (kimlik, alias değeri) güvenli kodlama. */
-export const seg = (value: string): string => encodeURIComponent(value);
+/**
+ * Yol parçası (kimlik, alias değeri, olay adı) güvenli kodlama. `encodeURIComponent` noktayı kodlamaz; `.` ve `..`
+ * tek başına yol parçası olunca istek başka uca gider, bu yüzden reddedilir.
+ */
+export function seg(value: string): string {
+  if (value === '.' || value === '..') throw new Error('Geçersiz değer: `.` ve `..` yol parçası olarak kullanılamaz.');
+  return encodeURIComponent(value);
+}

@@ -1,8 +1,8 @@
 {
   "name": "@pushizo/mcp-server",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "mcpName": "com.pushizo/mcp",
-  "description": "Pushizo MCP sunucusu: 54 okuma ve taslak aracı (stdio + Streamable HTTP). Test gönderimi yalnız test cihazlarına gider.",
+  "description": "Pushizo MCP sunucusu: 73 okuma ve taslak aracı (stdio + Streamable HTTP). Test gönderimi yalnız test cihazlarına gider.",
   "license": "MIT",
   "homepage": "https://docs.pushizo.com/docs/integrations/mcp",
   "repository": {
