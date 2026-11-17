@@ -2,6 +2,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { PushizoApi } from './api.js';
 import { READ, WRITE, WRITE_NOTE, appIdArg, createToolKit, cursorArg, idArg, limitArg, query, seg } from './kit.js';
+import { registerDataTools } from './tools-data.js';
+import { registerEngageTools } from './tools-engage.js';
 import { registerInsightTools } from './tools-insights.js';
 import { registerReadTools } from './tools-read.js';
 import { registerWriteTools } from './tools-write.js';
@@ -28,7 +30,9 @@ export function canListWriteTools(scopes: readonly string[] | undefined): boolea
 
 /**
  * Pushizo MCP sunucusu (ADR-0031 §6, ADR-0043): segment, kampanya, mesaj, şablon, journey, kullanıcı, olay, analitik,
- * in-app ve web büyüme okuma araçları; kampanya/segment/şablon/journey/in-app taslağı ve test cihazlarına test gönderimi.
+ * in-app ve web büyüme okuma araçları; veri (şirket, SQL, boru hattı, ambar) ve etkileşim (konuşma, AI ajanı, site
+ * araması, reklam) okuma araçları; kampanya/segment/şablon/journey/in-app/web kampanyası/web kişiselleştirme/anket/
+ * landing taslağı ve test cihazlarına test gönderimi.
  * Taşıma bağımsızdır (stdio, Streamable HTTP, testte in-memory).
  */
 export function createPushizoMcpServer(options: PushizoMcpOptions): McpServer {
@@ -137,7 +141,7 @@ export function createPushizoMcpServer(options: PushizoMcpOptions): McpServer {
         title: 'Create campaign draft',
         description:
           `${WRITE_NOTE} Creates a campaign in \`draft\` status. Audience is given as segment IDs; content inline or via template_id. ` +
-          'Example content: {"headings":{"en":"Title"},"contents":{"en":"Body"}}.',
+          'Example content: {"headings":{"en":"Title"},"contents":{"en":"Body"}}. Run run_campaign_preflight on the draft to audit it before a person sends it.',
         inputSchema: {
           app_id: appIdArg,
           name: z.string().min(2).max(120),
@@ -187,6 +191,8 @@ export function createPushizoMcpServer(options: PushizoMcpOptions): McpServer {
 
   registerReadTools(server, kit);
   registerInsightTools(server, kit);
+  registerDataTools(server, kit);
+  registerEngageTools(server, kit);
   if (writable) registerWriteTools(server, kit);
   return server;
 }

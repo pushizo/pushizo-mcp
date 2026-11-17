@@ -31,9 +31,10 @@ describe('Pushizo MCP sunucusu', () => {
     const client = await connect(fakeApi(() => ({})).api, 'app_1');
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    // ADR-0043: 11 → 54 araç; plan 15 Faz 51: +19 içgörü okuma aracı = 73 (gerçek kitleye gönderim/silme yok).
-    expect(names).toHaveLength(73);
-    expect(new Set(names).size).toBe(73);
+    // ADR-0043: 11 → 54 araç; plan 15 Faz 51: +19 içgörü okuma aracı = 73; public API eşitliği: +126 okuma, +4 taslak = 203
+    // (gerçek kitleye gönderim/silme yok).
+    expect(names).toHaveLength(203);
+    expect(new Set(names).size).toBe(203);
     expect(names).toEqual(
       expect.arrayContaining([
         'create_campaign_draft',
@@ -41,6 +42,10 @@ describe('Pushizo MCP sunucusu', () => {
         'create_template_draft',
         'create_journey_draft',
         'create_in_app_draft',
+        'create_web_campaign_draft',
+        'create_web_personalization_draft',
+        'create_survey_draft',
+        'create_landing_page_draft',
         'send_test_notification',
         'list_journeys',
         'get_journey_stats',
@@ -330,6 +335,99 @@ describe('Pushizo MCP sunucusu', () => {
     expect(calls[9]!.body).toEqual({ source: 'deliveries', metrics: ['sent', 'open_rate'], dimensions: ['channel'], days: 7, format: 'json' });
   });
 
+  it('eşitlik araçları (Faz 55–67 yetenekleri) doğru public uçları, sorgu ve gövdeyi kullanır', async () => {
+    const { api, calls } = fakeApi(() => ({ ok: true }));
+    const client = await connect(api, 'app_1');
+    const callAll: [string, Record<string, unknown>][] = [
+      ['list_companies', { q: 'acme', domain: 'acme.com', limit: 5 }],
+      ['list_company_members', { company_id: 'cmp_1', role: 'admin' }],
+      ['get_user_companies', { label: 'external_id', value: 'u 1' }],
+      ['get_affinity_overview', {}],
+      ['get_user_affinity', { user_id: 'usr_1' }],
+      ['get_sql_schema', {}],
+      ['run_sql_query', { query: 'select 1', row_limit: 10 }],
+      ['list_sql_runs', { status: 'ok' }],
+      ['list_data_transforms', { target: 'event' }],
+      ['preview_data_transform', { target: 'event', records: [{ name: 'purchase' }], transform_id: 'dtf_1' }],
+      ['list_quarantined_records', { status: 'pending', limit: 20 }],
+      ['list_warehouse_segment_runs', { segment_id: 'seg_1' }],
+      ['list_ai_agent_runs', { agent_id: 'aia_1', status: 'handed_off' }],
+      ['get_ai_agent_metrics', { agent_id: 'aia_1' }],
+      ['list_custom_agent_drafts', { status: 'pending' }],
+      ['get_uninstall_report', { from: '2026-11-01T00:00:00Z', compare: true }],
+      ['get_android_delivery_report', {}],
+      ['run_campaign_preflight', { campaign_id: 'cmp_1', check_links: true }],
+      ['list_web_personalizations', { status: 'active' }],
+      ['get_web_personalization_report', { personalization_id: 'wpz_1', days: 7 }],
+      ['get_site_search', {}],
+      ['list_site_search_sources', {}],
+      ['list_site_search_documents', { source_id: 'api', q: 'iade' }],
+      ['get_site_search_report', { days: 14 }],
+      ['list_conversations', { channel: 'telegram', unread: true }],
+      ['list_message_deliveries', { message_id: 'msg_1', status: 'failed' }],
+      ['list_audit_logs', { action: 'app.update' }],
+    ];
+    for (const [name, args] of callAll) {
+      const r = await client.callTool({ name, arguments: args });
+      expect(r.isError, `${name}: ${text(r)}`).toBeFalsy();
+    }
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual([
+      'GET /v1/apps/app_1/companies?limit=5&q=acme&domain=acme.com',
+      'GET /v1/apps/app_1/companies/cmp_1/members?role=admin',
+      'GET /v1/apps/app_1/users/by/external_id/u%201/companies',
+      'GET /v1/apps/app_1/affinity/overview',
+      'GET /v1/apps/app_1/affinity/users/usr_1',
+      'GET /v1/apps/app_1/sql/schema',
+      'POST /v1/apps/app_1/sql/query',
+      'GET /v1/apps/app_1/sql/runs?status=ok',
+      'GET /v1/apps/app_1/data-pipelines/transforms?target=event',
+      'POST /v1/apps/app_1/data-pipelines/transforms/preview',
+      'GET /v1/apps/app_1/data-pipelines/quarantine?status=pending&limit=20',
+      'GET /v1/apps/app_1/warehouse-segments/runs?segment_id=seg_1',
+      'GET /v1/apps/app_1/ai-agents/runs?agent_id=aia_1&status=handed_off',
+      'GET /v1/apps/app_1/ai-agents/aia_1/metrics',
+      'GET /v1/apps/app_1/custom-agents/drafts?status=pending',
+      'GET /v1/apps/app_1/analytics/uninstalls?from=2026-11-01T00%3A00%3A00Z&compare=true',
+      'GET /v1/apps/app_1/analytics/android-delivery',
+      'POST /v1/apps/app_1/campaigns/cmp_1/preflight?check_links=true',
+      'GET /v1/apps/app_1/web-personalizations?status=active',
+      'GET /v1/apps/app_1/web-personalizations/wpz_1/report?days=7',
+      'GET /v1/apps/app_1/site-search',
+      'GET /v1/apps/app_1/site-search/sources',
+      'GET /v1/apps/app_1/site-search/documents?source_id=api&q=iade',
+      'GET /v1/apps/app_1/site-search/report?days=14',
+      'GET /v1/apps/app_1/conversations?channel=telegram&unread=true',
+      'GET /v1/notifications/msg_1/deliveries?app_id=app_1&status=failed',
+      'GET /v1/organization/audit-logs?action=app.update',
+    ]);
+    expect(calls[6]!.body).toEqual({ query: 'select 1', row_limit: 10 });
+    expect(calls[9]!.body).toEqual({ target: 'event', records: [{ name: 'purchase' }], transform_id: 'dtf_1' });
+    expect(calls[17]!.body).toBeUndefined();
+  });
+
+  it('web büyüme taslakları yalnız MCP taslak uçlarına gider', async () => {
+    const { api, calls } = fakeApi(() => ({ id: 'x', status: 'draft' }));
+    const client = await connect(api, 'app_1');
+    const display = { layout: 'popup', blocks: [{ type: 'title', text: { tr: 'Bülten' } }] };
+    await client.callTool({ name: 'create_web_campaign_draft', arguments: { name: 'Bülten', display, trigger: { kind: 'page_load' }, priority: 5 } });
+    await client.callTool({ name: 'create_web_personalization_draft', arguments: { name: 'Başlık', changes: [{ action: 'text', selector: 'h1', text: { tr: 'Merhaba' } }], goal: { type: 'click', selector: 'a.cta' } } });
+    await client.callTool({ name: 'create_survey_draft', arguments: { name: 'NPS', questions: [{ id: 'nps', type: 'nps', text: { tr: 'Tavsiye eder misiniz?' } }] } });
+    await client.callTool({ name: 'create_landing_page_draft', arguments: { name: 'Kış', slug: 'kis', document: { version: 1, sections: [] } } });
+    expect(calls).toEqual([
+      { method: 'POST', path: '/v1/apps/app_1/mcp/web-campaign-drafts', body: { name: 'Bülten', display, trigger: { kind: 'page_load' }, priority: 5 } },
+      {
+        method: 'POST',
+        path: '/v1/apps/app_1/mcp/web-personalization-drafts',
+        body: { name: 'Başlık', changes: [{ action: 'text', selector: 'h1', text: { tr: 'Merhaba' } }], goal: { type: 'click', selector: 'a.cta' } },
+      },
+      { method: 'POST', path: '/v1/apps/app_1/mcp/survey-drafts', body: { name: 'NPS', questions: [{ id: 'nps', type: 'nps', text: { tr: 'Tavsiye eder misiniz?' } }] } },
+      { method: 'POST', path: '/v1/apps/app_1/mcp/landing-page-drafts', body: { name: 'Kış', slug: 'kis', document: { version: 1, sections: [] } } },
+    ]);
+    const badSlug = await client.callTool({ name: 'create_landing_page_draft', arguments: { name: 'Kış', slug: 'Kış Sayfası', document: {} } });
+    expect(badSlug.isError).toBe(true);
+    expect(calls).toHaveLength(4);
+  });
+
   it('şema reddi: sınır dışı ve biçimsiz girdiler API çağrısı yapılmadan döner', async () => {
     const { api, calls } = fakeApi(() => ({}));
     const client = await connect(api, 'app_1');
@@ -346,13 +444,24 @@ describe('Pushizo MCP sunucusu', () => {
 
   it('yazma araçları yalnızca kapsam `mcp:write` veya `admin` içeriyorsa listelenir; kapsam bilinmiyorsa hepsi', async () => {
     const names = async (scopes?: readonly string[]) => (await (await connect(fakeApi(() => ({})).api, 'app_1', scopes)).listTools()).tools.map((t) => t.name);
-    const writeTools = ['create_campaign_draft', 'create_segment_draft', 'create_template_draft', 'create_journey_draft', 'create_in_app_draft', 'send_test_notification'];
+    const writeTools = [
+      'create_campaign_draft',
+      'create_segment_draft',
+      'create_template_draft',
+      'create_journey_draft',
+      'create_in_app_draft',
+      'create_web_campaign_draft',
+      'create_web_personalization_draft',
+      'create_survey_draft',
+      'create_landing_page_draft',
+      'send_test_notification',
+    ];
     const readOnly = await names(['analytics:read', 'users:read']);
-    expect(readOnly).toHaveLength(73 - writeTools.length);
+    expect(readOnly).toHaveLength(203 - writeTools.length);
     for (const tool of writeTools) expect(readOnly).not.toContain(tool);
     expect(await names(['mcp:write'])).toEqual(expect.arrayContaining(writeTools));
     expect(await names(['admin'])).toEqual(expect.arrayContaining(writeTools));
-    expect(await names()).toHaveLength(73);
+    expect(await names()).toHaveLength(203);
   });
 
   it('hız sınırı ve zaman aşımı hataları yeniden deneme ipucuyla döner', async () => {

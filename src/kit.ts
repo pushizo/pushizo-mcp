@@ -24,6 +24,12 @@ export const cursorArg = z.string().max(500).optional().describe('The `next_curs
 export const idArg = (what: string) => z.string().min(1).max(64).regex(ID_PATTERN, ID_MESSAGE).describe(`${what} ID`);
 export const fromArg = z.string().max(40).optional().describe('ISO-8601 start (e.g. 2026-10-01T00:00:00Z); defaults to the report default.');
 export const toArg = z.string().max(40).optional().describe('ISO-8601 end.');
+/** Kullanıcıyı kimlik etiketiyle seçen ortak argümanlar (`/users/by/{label}/{value}` uçları). */
+export const aliasArgs = {
+  label: z.string().min(1).max(64).describe('Identity label: `external_id`, `pushizo_id` or a defined alias (e.g. `crm_id`).'),
+  value: z.string().min(1).max(255).describe('Value for the label (e.g. the external_id value).'),
+};
+export const compareArg = z.boolean().optional().describe('true: adds a comparison with the previous period of equal length.');
 /** Segment/arama tanımı: all/any/none koşul grupları (segment taslağıyla aynı biçim). */
 export const definitionArg = z
   .record(z.string(), z.unknown())

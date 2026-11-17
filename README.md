@@ -119,7 +119,8 @@ geçersizse süreç 1 koduyla çıkar.
 
 ## Araçlar
 
-73 araç. Ayrıntılı liste `docs/guides/mcp.md` içindedir. Özet:
+203 araç (193 okuma, 9 taslak, test gönderimi); public API'deki her okuma ucunun bir aracı vardır. Ayrıntılı liste
+`docs/guides/mcp.md` içindedir. Özet:
 
 | Araç | Tür | Gerekli kapsam |
 |---|---|---|
@@ -128,10 +129,11 @@ geçersizse süreç 1 koduyla çıkar.
 | RFM, öngörü, karar ajanı, kanal skoru, özellik bayrağı, rapor, yol analizi, katalog ve öneri, bölge araçları | okuma | `analytics:read` |
 | `list_messages`, `get_message` | okuma | `analytics:read` veya `notifications:write` |
 | `get_app`, `search_users`, `get_user`, `get_user_journeys`, `get_user_preferences`, `list_categories`, `list_rfm_users`, `list_prediction_users`, `list_wallet_templates` | okuma | `users:read` |
-| `create_campaign_draft`, `create_segment_draft`, `create_template_draft`, `create_journey_draft`, `create_in_app_draft` | onaylı mod — taslak | `mcp:write` |
+| Şirket, ilgi etiketleri, SQL sorgu (`run_sql_query`, yalnız SELECT), veri boru hattı, ambar segmenti, konuşma ve AI ajanı, özel AI ajanları, web kişiselleştirme, site içi arama, reklam, kaldırma ve Android teslimat raporu okuma araçları | okuma | `users:read`, `analytics:read`, `segments:read` veya `admin` (araca göre) |
+| `create_campaign_draft`, `create_segment_draft`, `create_template_draft`, `create_journey_draft`, `create_in_app_draft`, `create_web_campaign_draft`, `create_web_personalization_draft`, `create_survey_draft`, `create_landing_page_draft` | onaylı mod — taslak | `mcp:write` |
 | `send_test_notification` | onaylı mod — yalnız test cihazı | `mcp:write` |
 
-`admin` kapsamı tüm araçları açar. Taslak araçları gönderim, zamanlama ve yayın yapmaz (kampanya ve journey/in-app
+`admin` kapsamı tüm araçları açar. Taslak araçları gönderim, zamanlama ve yayın yapmaz (kampanya, journey, in-app, web kampanyası, web kişiselleştirme, anket ve landing
 `draft`, şablon ve kampanyaya `mcp` etiketi, segment dinamik). `send_test_notification` gerçek kitleye gidemez.
 Asistandan çağırmadan önce kullanıcının açık onayı istenir.
 

@@ -1,12 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { READ, appIdArg, cursorArg, definitionArg, fromArg, idArg, limitArg, query, seg, toArg, type ToolKit } from './kit.js';
-
-const aliasArgs = {
-  label: z.string().min(1).max(64).describe('Identity label: `external_id`, `pushizo_id` or a defined alias (e.g. `crm_id`).'),
-  value: z.string().min(1).max(255).describe('Value for the label (e.g. the external_id value).'),
-};
-const compareArg = z.boolean().optional().describe('true: adds a comparison with the previous period of equal length.');
+import { READ, aliasArgs, appIdArg, compareArg, cursorArg, definitionArg, fromArg, idArg, limitArg, query, seg, toArg, type ToolKit } from './kit.js';
 
 /**
  * Genişletilmiş okuma araçları (ADR-0043): app, segment, kampanya istatistiği, şablon, journey, kullanıcı, olay,
