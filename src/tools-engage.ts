@@ -468,7 +468,7 @@ export function registerEngageTools(server: McpServer, kit: ToolKit): void {
       description:
         'Runs the pre-send audit on a campaign and returns the findings (brand kit, banned phrases/phishing, links, Liquid personalization, consent rules). ' +
         'It only reports; it does not change, approve or send the campaign. Critical findings block sending until someone acknowledges them in the dashboard. ' +
-        'Required scope: notifications:write.',
+        'Required scope: notifications:write or mcp:write.',
       inputSchema: { app_id: appIdArg, campaign_id: idArg('Campaign'), check_links: z.boolean().optional().describe('true: also fetches the links in the content to verify them (slower).') },
       annotations: READ,
     },

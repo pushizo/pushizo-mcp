@@ -26,6 +26,8 @@ const EXCLUDED_READS: Record<string, string> = {
   'GET /v1/apps/{}/wallet/passes/{}': 'kart indirme bağlantısı taşır (ADR-0076)',
   'GET /v1/apps/{}/integrations/zapier/me': 'Zapier bağlantı el sıkışması',
   'GET /v1/apps/{}/integrations/zapier/samples': 'Zapier tetikleyici örnekleri',
+  'GET /v1/apps/{}/integrations/zapier/hooks': 'abonelik hedef adresleri (Zapier yakalama bağlantıları) taşır',
+  'GET /v1/apps/{}/ads/creatives': 'imzalı görsel bağlantısı taşır',
 };
 
 /** Yazma araçlarının gidebileceği uçlar: yalnız MCP taslak/test uçları (`mcp:write`). */
@@ -99,6 +101,9 @@ const ARGS: Record<string, Record<string, unknown>> = {
   run_report: { source: 'deliveries', metrics: ['sent'] },
   get_ad_spend_report: { from: '2026-10-01', to: '2026-10-31' },
   get_ad_attribution_report: { from: '2026-10-01', to: '2026-10-31' },
+  trace_message: { q: 'msg_1' },
+  get_integration: { type: 'slack' },
+  list_integration_runs: { type: 'slack' },
 };
 
 async function connectWithCalls() {

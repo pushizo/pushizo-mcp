@@ -5,6 +5,7 @@ import { READ, WRITE, WRITE_NOTE, appIdArg, createToolKit, cursorArg, idArg, lim
 import { registerDataTools } from './tools-data.js';
 import { registerEngageTools } from './tools-engage.js';
 import { registerInsightTools } from './tools-insights.js';
+import { registerOpsTools } from './tools-ops.js';
 import { registerReadTools } from './tools-read.js';
 import { registerWriteTools } from './tools-write.js';
 
@@ -193,6 +194,7 @@ export function createPushizoMcpServer(options: PushizoMcpOptions): McpServer {
   registerInsightTools(server, kit);
   registerDataTools(server, kit);
   registerEngageTools(server, kit);
+  registerOpsTools(server, kit);
   if (writable) registerWriteTools(server, kit);
   return server;
 }

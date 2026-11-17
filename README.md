@@ -119,7 +119,7 @@ geçersizse süreç 1 koduyla çıkar.
 
 ## Araçlar
 
-203 araç (193 okuma, 9 taslak, test gönderimi); public API'deki her okuma ucunun bir aracı vardır. Ayrıntılı liste
+228 araç (218 okuma, 9 taslak, test gönderimi); public API'deki her okuma ucunun bir aracı vardır. Ayrıntılı liste
 `docs/guides/mcp.md` içindedir. Özet:
 
 | Araç | Tür | Gerekli kapsam |
