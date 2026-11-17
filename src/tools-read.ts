@@ -335,7 +335,7 @@ export function registerReadTools(server: McpServer, kit: ToolKit): void {
     {
       title: 'Inbox metrics',
       description: 'Live chat and unified inbox: conversation volume, first response and resolution times. Required scope: analytics:read.',
-      inputSchema: { app_id: appIdArg, from: fromArg, to: toArg, channel: z.enum(['sms', 'whatsapp', 'rcs', 'email', 'chat']).optional() },
+      inputSchema: { app_id: appIdArg, from: fromArg, to: toArg, channel: z.enum(['sms', 'whatsapp', 'rcs', 'telegram', 'viber', 'email', 'chat']).optional() },
       annotations: READ,
     },
     async (a) => get(`/v1/apps/${app(a.app_id)}/inbox/metrics${query({ from: a.from, to: a.to, channel: a.channel })}`),
