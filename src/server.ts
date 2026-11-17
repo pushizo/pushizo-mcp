@@ -11,7 +11,7 @@ import { registerWriteTools } from './tools-write.js';
 
 export const MCP_SERVER_NAME = 'pushizo';
 /** `serverInfo.version`; `package.json` sürümüyle aynı olmalıdır (test zorlar). */
-export const MCP_SERVER_VERSION = '0.2.0';
+export const MCP_SERVER_VERSION = '0.3.0';
 
 export interface PushizoMcpOptions {
   api: PushizoApi;
