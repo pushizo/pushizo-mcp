@@ -5,7 +5,7 @@ import { READ, appIdArg, cursorArg, idArg, limitArg, query, seg, type ToolKit } 
 const dayArg = (what: string) =>
   z
     .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD biçiminde gün verin.')
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Provide a day in YYYY-MM-DD format.')
     .optional()
     .describe(what);
 const isoArg = (what: string) => z.string().max(40).optional().describe(what);
@@ -29,8 +29,8 @@ export function registerInsightTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'get_rfm_overview',
     {
-      title: 'RFM özeti',
-      description: 'RFM segmentlerinin (champions, at_risk, lost…) kullanıcı sayıları, payları ve son hesap zamanı. Gerekli kapsam: analytics:read.',
+      title: 'RFM overview',
+      description: 'User counts and shares per RFM segment (champions, at_risk, lost…) and last computation time. Required scope: analytics:read.',
       inputSchema: { app_id: appIdArg },
       annotations: READ,
     },
@@ -39,9 +39,9 @@ export function registerInsightTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'get_rfm_transitions',
     {
-      title: 'RFM segment geçişleri',
-      description: 'İki gün arasında kullanıcıların hangi RFM segmentinden hangisine geçtiği (varsayılan son 30 gün). Gerekli kapsam: analytics:read.',
-      inputSchema: { app_id: appIdArg, from: dayArg('Başlangıç günü (YYYY-MM-DD); boşsa 30 gün önce.'), to: dayArg('Bitiş günü (YYYY-MM-DD); boşsa bugün.') },
+      title: 'RFM segment transitions',
+      description: 'How users moved between RFM segments between two days (default: last 30 days). Required scope: analytics:read.',
+      inputSchema: { app_id: appIdArg, from: dayArg('Start day (YYYY-MM-DD); defaults to 30 days ago.'), to: dayArg('End day (YYYY-MM-DD); defaults to today.') },
       annotations: READ,
     },
     async (a) => get(`/v1/apps/${app(a.app_id)}/rfm/transitions${query({ from: a.from, to: a.to })}`),
@@ -49,8 +49,8 @@ export function registerInsightTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'list_rfm_users',
     {
-      title: 'RFM segmentindeki kullanıcılar',
-      description: 'Bir RFM segmentindeki kullanıcılar ve R/F/M skorları. Devamı için yanıttaki `next_cursor` değerini `cursor` olarak verin. Gerekli kapsam: users:read.',
+      title: 'Users in an RFM segment',
+      description: 'Users in an RFM segment with their R/F/M scores. For more, pass the response `next_cursor` as `cursor`. Required scope: users:read.',
       inputSchema: { app_id: appIdArg, segment: z.enum(RFM_SEGMENTS).optional(), limit: limitArg, cursor: cursorArg },
       annotations: READ,
     },
@@ -61,8 +61,8 @@ export function registerInsightTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'list_predictions',
     {
-      title: 'Öngörü modelleri',
-      description: 'Kayıp riski ve olay olasılığı modelleri: durum, kalite ölçümü ve son eğitim zamanı. Gerekli kapsam: analytics:read.',
+      title: 'List prediction models',
+      description: 'Churn risk and event likelihood models: status, quality metric and last training time. Required scope: analytics:read.',
       inputSchema: { app_id: appIdArg },
       annotations: READ,
     },
@@ -71,9 +71,9 @@ export function registerInsightTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'get_prediction',
     {
-      title: 'Öngörü modeli',
-      description: 'Tek modelin ayrıntısı: tanım, kalite (AUC, isabet), skor dağılımı. Gerekli kapsam: analytics:read.',
-      inputSchema: { app_id: appIdArg, prediction_id: idArg('Öngörü modeli') },
+      title: 'Get prediction model',
+      description: 'Details of a single model: definition, quality (AUC, accuracy), score distribution. Required scope: analytics:read.',
+      inputSchema: { app_id: appIdArg, prediction_id: idArg('Prediction model') },
       annotations: READ,
     },
     async (a) => get(`/v1/apps/${app(a.app_id)}/predictions/${seg(a.prediction_id)}`),
@@ -81,9 +81,9 @@ export function registerInsightTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'list_prediction_users',
     {
-      title: 'Öngörü skoruna göre kullanıcılar',
-      description: 'Modelin skorladığı kullanıcılar; `bucket` ile düşük/orta/yüksek olasılık grubu seçilir. Devamı için `next_cursor`. Gerekli kapsam: users:read.',
-      inputSchema: { app_id: appIdArg, prediction_id: idArg('Öngörü modeli'), bucket: z.enum(['low', 'medium', 'high']).optional(), limit: limitArg, cursor: cursorArg },
+      title: 'Users by prediction score',
+      description: 'Users scored by the model; `bucket` selects the low/medium/high likelihood group. Use `next_cursor` for more. Required scope: users:read.',
+      inputSchema: { app_id: appIdArg, prediction_id: idArg('Prediction model'), bucket: z.enum(['low', 'medium', 'high']).optional(), limit: limitArg, cursor: cursorArg },
       annotations: READ,
     },
     async (a) => get(`/v1/apps/${app(a.app_id)}/predictions/${seg(a.prediction_id)}/users${query({ bucket: a.bucket, limit: a.limit, cursor: a.cursor })}`),
@@ -93,8 +93,8 @@ export function registerInsightTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'list_feature_flags',
     {
-      title: 'Özellik bayrakları',
-      description: 'Özellik bayrakları: durum, yayın yüzdesi, hedef segment ve uzaktan yapılandırma değerleri. Gerekli kapsam: analytics:read.',
+      title: 'List feature flags',
+      description: 'Feature flags: status, rollout percentage, target segment and remote config values. Required scope: analytics:read.',
       inputSchema: { app_id: appIdArg },
       annotations: READ,
     },
@@ -103,9 +103,9 @@ export function registerInsightTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'get_feature_flag',
     {
-      title: 'Özellik bayrağı',
-      description: 'Tek bayrağın ayrıntısı: kademeli yayın takvimi, hedefleme ve değerler. Gerekli kapsam: analytics:read.',
-      inputSchema: { app_id: appIdArg, flag_id: idArg('Bayrak') },
+      title: 'Get feature flag',
+      description: 'Details of a single flag: staged rollout schedule, targeting and values. Required scope: analytics:read.',
+      inputSchema: { app_id: appIdArg, flag_id: idArg('Flag') },
       annotations: READ,
     },
     async (a) => get(`/v1/apps/${app(a.app_id)}/feature-flags/${seg(a.flag_id)}`),
@@ -115,19 +115,19 @@ export function registerInsightTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'run_path_analysis',
     {
-      title: 'Kullanıcı yol analizi',
+      title: 'User path analysis',
       description:
-        'Bir olaydan sonra (`after`) veya olaya gelmeden önce (`before`) kullanıcıların izlediği olay yolları ve en sık yollar. Gerekli kapsam: analytics:read.',
+        'Event paths users follow after (`after`) or before (`before`) an event, and the most frequent paths. Required scope: analytics:read.',
       inputSchema: {
         app_id: appIdArg,
-        event: z.string().min(1).max(100).describe('Başlangıç olayı, ör. `add_to_cart`.'),
+        event: z.string().min(1).max(100).describe('Anchor event, e.g. `add_to_cart`.'),
         direction: z.enum(['after', 'before']).optional(),
-        depth: z.number().int().min(1).max(5).optional().describe('İzlenecek adım sayısı (varsayılan 3).'),
-        top: z.number().int().min(2).max(10).optional().describe('Adım başına ayrı gösterilecek olay sayısı (varsayılan 5).'),
-        window_hours: z.number().int().min(1).max(720).optional().describe('Başlangıç olayından en fazla uzaklık (saat, varsayılan 24).'),
-        exclude: z.array(z.string().min(1).max(100)).max(20).optional().describe('Yolda sayılmayacak olaylar.'),
-        from: isoArg('ISO-8601 başlangıç.'),
-        to: isoArg('ISO-8601 bitiş.'),
+        depth: z.number().int().min(1).max(5).optional().describe('Number of steps to trace (default 3).'),
+        top: z.number().int().min(2).max(10).optional().describe('Number of events shown separately per step (default 5).'),
+        window_hours: z.number().int().min(1).max(720).optional().describe('Maximum distance from the anchor event (hours, default 24).'),
+        exclude: z.array(z.string().min(1).max(100)).max(20).optional().describe('Events to ignore in paths.'),
+        from: isoArg('ISO-8601 start.'),
+        to: isoArg('ISO-8601 end.'),
       },
       annotations: READ,
     },
@@ -146,23 +146,23 @@ export function registerInsightTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'run_report',
     {
-      title: 'Rapor çalıştır',
+      title: 'Run report',
       description:
-        'Serbest rapor: kaynak, metrik, kırılım ve filtre seçilir. Kaynaklar ve alanları — deliveries: sent, delivered, failed, opened, clicked, ' +
-        'delivery_rate, open_rate, click_rate, failure_rate; kırılım day/week/month/channel/provider/campaign/status. events: count, unique_users, ' +
-        'value_sum, value_avg; kırılım day/week/month/name/source. conversions: conversions, revenue, unique_users; kırılım day/week/month/campaign/' +
-        'event_name/kind. `days` ile `from`/`to` birlikte verilmez. Gerekli kapsam: analytics:read.',
+        'Ad-hoc report: pick a source, metrics, dimensions and filters. Sources and fields — deliveries: metrics sent, delivered, failed, opened, clicked, ' +
+        'delivery_rate, open_rate, click_rate, failure_rate; dimensions day/week/month/channel/provider/campaign/status. events: metrics count, unique_users, ' +
+        'value_sum, value_avg; dimensions day/week/month/name/source. conversions: metrics conversions, revenue, unique_users; dimensions day/week/month/campaign/' +
+        'event_name/kind. Do not combine `days` with `from`/`to`. Required scope: analytics:read.',
       inputSchema: {
         app_id: appIdArg,
         source: z.enum(REPORT_SOURCES),
         metrics: z.array(z.string().min(1).max(32)).min(1).max(8),
         dimensions: z.array(z.string().min(1).max(32)).max(2).optional(),
-        filters: z.record(z.string().max(32), z.array(z.string().min(1).max(200)).min(1).max(50)).optional().describe('ör. {"channel":["email","sms"]}'),
+        filters: z.record(z.string().max(32), z.array(z.string().min(1).max(200)).min(1).max(50)).optional().describe('e.g. {"channel":["email","sms"]}'),
         sort: z.object({ by: z.string().max(64), direction: z.enum(['asc', 'desc']).optional() }).optional(),
-        limit: z.number().int().min(1).max(1000).optional().describe('Satır sınırı (varsayılan 100).'),
-        days: z.number().int().min(1).max(730).optional().describe('Son kaç gün.'),
-        from: isoArg('ISO-8601 başlangıç.'),
-        to: isoArg('ISO-8601 bitiş.'),
+        limit: z.number().int().min(1).max(1000).optional().describe('Row limit (default 100).'),
+        days: z.number().int().min(1).max(730).optional().describe('Number of most recent days.'),
+        from: isoArg('ISO-8601 start.'),
+        to: isoArg('ISO-8601 end.'),
       },
       annotations: READ,
     },
@@ -183,8 +183,8 @@ export function registerInsightTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'list_saved_reports',
     {
-      title: 'Kayıtlı raporlar',
-      description: 'Panelde kaydedilmiş rapor tanımları. Tanımı `run_report` ile çalıştırabilirsiniz. Gerekli kapsam: analytics:read.',
+      title: 'List saved reports',
+      description: 'Report definitions saved in the dashboard. Run a definition with `run_report`. Required scope: analytics:read.',
       inputSchema: { app_id: appIdArg },
       annotations: READ,
     },
@@ -193,9 +193,9 @@ export function registerInsightTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'get_saved_report',
     {
-      title: 'Kayıtlı rapor',
-      description: 'Kayıtlı raporun tanımı (kaynak, metrikler, kırılımlar, filtreler). Gerekli kapsam: analytics:read.',
-      inputSchema: { app_id: appIdArg, report_id: idArg('Rapor') },
+      title: 'Get saved report',
+      description: 'Definition of a saved report (source, metrics, dimensions, filters). Required scope: analytics:read.',
+      inputSchema: { app_id: appIdArg, report_id: idArg('Report') },
       annotations: READ,
     },
     async (a) => get(`/v1/apps/${app(a.app_id)}/analytics/reports/${seg(a.report_id)}`),
@@ -205,8 +205,8 @@ export function registerInsightTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'list_decision_agents',
     {
-      title: 'Karar ajanları',
-      description: 'Kişi başına en iyi seçeneği öğrenen karar ajanları: durum, seçenekler ve hedef. Gerekli kapsam: analytics:read.',
+      title: 'List decision agents',
+      description: 'Decision agents that learn the best option per user: status, options and goal. Required scope: analytics:read.',
       inputSchema: { app_id: appIdArg },
       annotations: READ,
     },
@@ -215,9 +215,9 @@ export function registerInsightTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'get_decision_agent_report',
     {
-      title: 'Karar ajanı raporu',
-      description: 'Ajanın seçenek başına atama ve ödül sayıları ile kontrol grubuna karşı kazancı. Gerekli kapsam: analytics:read.',
-      inputSchema: { app_id: appIdArg, agent_id: idArg('Karar ajanı') },
+      title: 'Decision agent report',
+      description: 'Per-option assignment and reward counts and lift versus the control group. Required scope: analytics:read.',
+      inputSchema: { app_id: appIdArg, agent_id: idArg('Decision agent') },
       annotations: READ,
     },
     async (a) => get(`/v1/apps/${app(a.app_id)}/decision-agents/${seg(a.agent_id)}/report`),
@@ -227,8 +227,8 @@ export function registerInsightTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'list_catalogs',
     {
-      title: 'Ürün katalogları',
-      description: 'Ürün katalogları (ad, para birimi, ürün sayısı). Öneri araçları için `catalog_id` buradan alınır. Gerekli kapsam: analytics:read.',
+      title: 'List product catalogs',
+      description: 'Product catalogs (name, currency, item count). Get `catalog_id` for recommendation tools here. Required scope: analytics:read.',
       inputSchema: { app_id: appIdArg },
       annotations: READ,
     },
@@ -237,13 +237,13 @@ export function registerInsightTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'get_recommendations',
     {
-      title: 'Ürün önerileri',
+      title: 'Product recommendations',
       description:
-        'Katalogdan ürün önerileri. Stratejiler: personalized ve recently_viewed kullanıcı ister (`user_id` ya da `external_id`, ikisi birlikte verilmez); ' +
-        'similar `item_id`, category `category` ister; popular, trending ve new_arrivals girdisizdir. Gerekli kapsam: analytics:read.',
+        'Product recommendations from a catalog. Strategies: personalized and recently_viewed need a user (`user_id` or `external_id`, not both); ' +
+        'similar needs `item_id`, category needs `category`; popular, trending and new_arrivals take no input. Required scope: analytics:read.',
       inputSchema: {
         app_id: appIdArg,
-        catalog_id: idArg('Katalog'),
+        catalog_id: idArg('Catalog'),
         strategy: z.enum(RECOMMENDATION_STRATEGIES),
         limit: z.number().int().min(1).max(20).optional(),
         user_id: z.string().max(64).optional(),
@@ -270,8 +270,8 @@ export function registerInsightTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'get_channel_score_overview',
     {
-      title: 'En iyi kanal özeti',
-      description: 'Kullanıcıların en iyi kanala göre dağılımı (push, e-posta, SMS…) ve son hesap zamanı. Gerekli kapsam: analytics:read.',
+      title: 'Best channel overview',
+      description: 'Distribution of users by best channel (push, email, SMS…) and last computation time. Required scope: analytics:read.',
       inputSchema: { app_id: appIdArg },
       annotations: READ,
     },
@@ -282,8 +282,8 @@ export function registerInsightTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'list_geofences',
     {
-      title: 'Bölgeler (geofence)',
-      description: 'Tanımlı bölgeler: ad, merkez, yarıçap ve durum. Kullanıcı konumu içermez. Gerekli kapsam: analytics:read.',
+      title: 'List geofences',
+      description: 'Defined geofences: name, center, radius and status. Contains no user locations. Required scope: analytics:read.',
       inputSchema: { app_id: appIdArg },
       annotations: READ,
     },
@@ -294,8 +294,8 @@ export function registerInsightTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'list_wallet_templates',
     {
-      title: 'Wallet şablonları',
-      description: 'Apple ve Google Wallet kart şablonları (kupon, sadakat kartı, bilet) ve verilmiş kart sayıları. Kartların kendisi ve indirme bağlantıları dönmez. Gerekli kapsam: users:read.',
+      title: 'List Wallet templates',
+      description: 'Apple and Google Wallet pass templates (coupon, loyalty card, ticket) and issued pass counts. Passes themselves and download links are not returned. Required scope: users:read.',
       inputSchema: { app_id: appIdArg },
       annotations: READ,
     },

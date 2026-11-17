@@ -3,10 +3,10 @@ import { z } from 'zod';
 import { READ, appIdArg, cursorArg, definitionArg, fromArg, idArg, limitArg, query, seg, toArg, type ToolKit } from './kit.js';
 
 const aliasArgs = {
-  label: z.string().min(1).max(64).describe('Kimlik etiketi: `external_id`, `pushizo_id` ya da tanımlı alias (ör. `crm_id`).'),
-  value: z.string().min(1).max(255).describe('Etiketin değeri (ör. external_id değeri).'),
+  label: z.string().min(1).max(64).describe('Identity label: `external_id`, `pushizo_id` or a defined alias (e.g. `crm_id`).'),
+  value: z.string().min(1).max(255).describe('Value for the label (e.g. the external_id value).'),
 };
-const compareArg = z.boolean().optional().describe('true: önceki eşit uzunluktaki dönemle karşılaştırma ekler.');
+const compareArg = z.boolean().optional().describe('true: adds a comparison with the previous period of equal length.');
 
 /**
  * Genişletilmiş okuma araçları (ADR-0043): app, segment, kampanya istatistiği, şablon, journey, kullanıcı, olay,
@@ -21,15 +21,15 @@ export function registerReadTools(server: McpServer, kit: ToolKit): void {
   // ---- app ve organizasyon
   server.registerTool(
     'get_app',
-    { title: 'App bilgisi', description: 'App ayarları: ad, platformlar, varsayılan dil, saat dilimi. Gerekli kapsam: users:read.', inputSchema: { app_id: appIdArg }, annotations: READ },
+    { title: 'App info', description: 'App settings: name, platforms, default language, time zone. Required scope: users:read.', inputSchema: { app_id: appIdArg }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}`),
   );
   server.registerTool(
     'get_organization_usage',
     {
-      title: 'Organizasyon kullanımı',
-      description: 'Plan kotaları, bu ayki kullanım ve aşım tahmini (yalnızca organizasyon geneli anahtar). Gerekli kapsam: analytics:read.',
-      inputSchema: { days: z.number().int().min(7).max(90).optional().describe('Günlük seri uzunluğu (7–90, varsayılan 30).') },
+      title: 'Organization usage',
+      description: 'Plan quotas, current-month usage and overage forecast (organization-wide key only). Required scope: analytics:read.',
+      inputSchema: { days: z.number().int().min(7).max(90).optional().describe('Daily series length (7–90, default 30).') },
       annotations: READ,
     },
     async (a) => get(`/v1/organization/usage${query({ days: a.days })}`),
@@ -39,61 +39,61 @@ export function registerReadTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'preview_segment',
     {
-      title: 'Segment önizleme',
-      description: 'Kaydedilmemiş bir tanımın kitle sayısı ve örnek kullanıcıları (segment oluşturmadan). Gerekli kapsam: segments:read.',
-      inputSchema: { app_id: appIdArg, definition: definitionArg, limit: z.number().int().min(1).max(50).optional().describe('Örnek kullanıcı sayısı.') },
+      title: 'Preview segment',
+      description: 'Audience count and sample users for an unsaved definition (without creating a segment). Required scope: segments:read.',
+      inputSchema: { app_id: appIdArg, definition: definitionArg, limit: z.number().int().min(1).max(50).optional().describe('Number of sample users.') },
       annotations: READ,
     },
     async (a) => post(`/v1/apps/${app(a.app_id)}/segments/preview`, { definition: a.definition, ...(a.limit ? { limit: a.limit } : {}) }),
   );
   server.registerTool(
     'estimate_segment',
-    { title: 'Segment kitle tahmini', description: 'Kayıtlı segmentin güncel kitle ve kanal bazında abonelik tahmini. Gerekli kapsam: segments:read.', inputSchema: { app_id: appIdArg, segment_id: idArg('Segment') }, annotations: READ },
+    { title: 'Estimate segment audience', description: 'Current audience and per-channel subscription estimate for a saved segment. Required scope: segments:read.', inputSchema: { app_id: appIdArg, segment_id: idArg('Segment') }, annotations: READ },
     async (a) => post(`/v1/apps/${app(a.app_id)}/segments/${seg(a.segment_id)}/estimate`, {}),
   );
   server.registerTool(
     'list_segment_campaigns',
-    { title: 'Segmenti kullanan kampanyalar', description: 'Segmenti dahil veya hariç tutan kampanyalar. Gerekli kapsam: segments:read.', inputSchema: { app_id: appIdArg, segment_id: idArg('Segment') }, annotations: READ },
+    { title: 'Campaigns using a segment', description: 'Campaigns that include or exclude the segment. Required scope: segments:read.', inputSchema: { app_id: appIdArg, segment_id: idArg('Segment') }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/segments/${seg(a.segment_id)}/campaigns`),
   );
 
   // ---- kampanya istatistikleri
   server.registerTool(
     'get_campaign_stats',
-    { title: 'Kampanya istatistikleri', description: 'Gönderim, teslim, açılma, tıklama, dönüşüm ve kanal kırılımı. Gerekli kapsam: analytics:read.', inputSchema: { app_id: appIdArg, campaign_id: idArg('Kampanya') }, annotations: READ },
+    { title: 'Campaign stats', description: 'Sends, deliveries, opens, clicks, conversions and per-channel breakdown. Required scope: analytics:read.', inputSchema: { app_id: appIdArg, campaign_id: idArg('Campaign') }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/campaigns/${seg(a.campaign_id)}/stats`),
   );
   server.registerTool(
     'get_campaign_variant_stats',
-    { title: 'A/B varyant istatistikleri', description: 'Kampanya varyantlarının metrikleri ve anlamlılık (z-testi) sonucu. Gerekli kapsam: analytics:read.', inputSchema: { app_id: appIdArg, campaign_id: idArg('Kampanya') }, annotations: READ },
+    { title: 'A/B variant stats', description: 'Metrics per campaign variant and significance (z-test) result. Required scope: analytics:read.', inputSchema: { app_id: appIdArg, campaign_id: idArg('Campaign') }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/campaigns/${seg(a.campaign_id)}/variants/stats`),
   );
 
   // ---- şablonlar
   server.registerTool(
     'get_template',
-    { title: 'Şablon oku', description: 'Şablon içeriği (dillere göre başlık/metin, e-posta, SMS…). Gerekli kapsam: analytics:read.', inputSchema: { app_id: appIdArg, template_id: idArg('Şablon') }, annotations: READ },
+    { title: 'Get template', description: 'Template content (per-language title/body, email, SMS…). Required scope: analytics:read.', inputSchema: { app_id: appIdArg, template_id: idArg('Template') }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/templates/${seg(a.template_id)}`),
   );
   server.registerTool(
     'get_template_stats',
-    { title: 'Şablon performansı', description: 'Şablonu kullanan mesajların toplu metrikleri. Gerekli kapsam: analytics:read.', inputSchema: { app_id: appIdArg, template_id: idArg('Şablon') }, annotations: READ },
+    { title: 'Template performance', description: 'Aggregate metrics of messages that used the template. Required scope: analytics:read.', inputSchema: { app_id: appIdArg, template_id: idArg('Template') }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/templates/${seg(a.template_id)}/stats`),
   );
   server.registerTool(
     'list_template_versions',
-    { title: 'Şablon sürümleri', description: 'Şablonun kayıtlı sürüm geçmişi. Gerekli kapsam: analytics:read.', inputSchema: { app_id: appIdArg, template_id: idArg('Şablon') }, annotations: READ },
+    { title: 'Template versions', description: 'Saved version history of the template. Required scope: analytics:read.', inputSchema: { app_id: appIdArg, template_id: idArg('Template') }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/templates/${seg(a.template_id)}/versions`),
   );
   server.registerTool(
     'render_template',
     {
-      title: 'Şablon önizleme',
-      description: 'Şablonu Liquid değişkenleriyle işler (gönderim yapmaz): örnek kullanıcı tag/özellikleri ve dil ile son hali. Gerekli kapsam: analytics:read.',
+      title: 'Render template',
+      description: 'Renders the template with Liquid variables (does not send): final output for sample user tags/properties and language. Required scope: analytics:read.',
       inputSchema: {
         app_id: appIdArg,
-        template_id: idArg('Şablon'),
-        channel: z.string().max(32).optional().describe('ör. ios_push, android_push, web_push, email, sms'),
+        template_id: idArg('Template'),
+        channel: z.string().max(32).optional().describe('e.g. ios_push, android_push, web_push, email, sms'),
         language: z.string().min(2).max(10).optional(),
         user: z.record(z.string(), z.unknown()).optional().describe('{"external_id":"u1","tags":{"plan":"pro"},"properties":{…}}'),
         custom_data: z.record(z.string(), z.unknown()).optional(),
@@ -113,8 +113,8 @@ export function registerReadTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'list_journeys',
     {
-      title: 'Journey’leri listele',
-      description: 'Otomasyon akışları (durum ve ad filtresi). Gerekli kapsam: analytics:read.',
+      title: 'List journeys',
+      description: 'Automation flows (filter by status and name). Required scope: analytics:read.',
       inputSchema: { app_id: appIdArg, status: z.enum(['draft', 'active', 'paused', 'archived']).optional(), q: z.string().max(100).optional(), limit: limitArg, cursor: cursorArg },
       annotations: READ,
     },
@@ -122,14 +122,14 @@ export function registerReadTools(server: McpServer, kit: ToolKit): void {
   );
   server.registerTool(
     'get_journey',
-    { title: 'Journey oku', description: 'Journey grafiği (düğümler, kenarlar), giriş/çıkış kuralları ve yayın durumu. Gerekli kapsam: analytics:read.', inputSchema: { app_id: appIdArg, journey_id: idArg('Journey') }, annotations: READ },
+    { title: 'Get journey', description: 'Journey graph (nodes, edges), entry/exit rules and publish status. Required scope: analytics:read.', inputSchema: { app_id: appIdArg, journey_id: idArg('Journey') }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/journeys/${seg(a.journey_id)}`),
   );
   server.registerTool(
     'get_journey_stats',
     {
-      title: 'Journey istatistikleri',
-      description: 'Düğüm bazında giriş/çıkış, bekleyen, hedefe ulaşan ve mesaj metrikleri. Gerekli kapsam: analytics:read.',
+      title: 'Journey stats',
+      description: 'Per-node entries/exits, waiting, goal reached and message metrics. Required scope: analytics:read.',
       inputSchema: { app_id: appIdArg, journey_id: idArg('Journey'), version: z.number().int().min(1).optional(), all_versions: z.boolean().optional() },
       annotations: READ,
     },
@@ -138,8 +138,8 @@ export function registerReadTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'list_journey_runs',
     {
-      title: 'Journey çalıştırmaları',
-      description: 'Kullanıcı bazında journey çalıştırmaları (durum, kullanıcı, sürüm filtresi). Gerekli kapsam: analytics:read.',
+      title: 'Journey runs',
+      description: 'Per-user journey runs (filter by status, user, version). Required scope: analytics:read.',
       inputSchema: {
         app_id: appIdArg,
         journey_id: idArg('Journey'),
@@ -155,7 +155,7 @@ export function registerReadTools(server: McpServer, kit: ToolKit): void {
   );
   server.registerTool(
     'get_journey_run',
-    { title: 'Journey çalıştırması', description: 'Tek çalıştırmanın adım adım zaman çizelgesi. Gerekli kapsam: analytics:read.', inputSchema: { app_id: appIdArg, journey_id: idArg('Journey'), run_id: idArg('Çalıştırma') }, annotations: READ },
+    { title: 'Get journey run', description: 'Step-by-step timeline of a single run. Required scope: analytics:read.', inputSchema: { app_id: appIdArg, journey_id: idArg('Journey'), run_id: idArg('Run') }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/journeys/${seg(a.journey_id)}/runs/${seg(a.run_id)}`),
   );
 
@@ -163,8 +163,8 @@ export function registerReadTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'search_users',
     {
-      title: 'Kullanıcı ara',
-      description: 'Koşullara uyan kullanıcılar (segment tanımıyla aynı biçim; sayfalı). Kişisel veri içerir, yalnızca gereken kadar isteyin. Gerekli kapsam: users:read.',
+      title: 'Search users',
+      description: 'Users matching conditions (same format as a segment definition; paginated). Contains personal data; request only what you need. Required scope: users:read.',
       inputSchema: { app_id: appIdArg, definition: definitionArg, limit: z.number().int().min(1).max(200).optional(), cursor: cursorArg },
       annotations: READ,
     },
@@ -172,34 +172,34 @@ export function registerReadTools(server: McpServer, kit: ToolKit): void {
   );
   server.registerTool(
     'get_user',
-    { title: 'Kullanıcı oku', description: 'Kullanıcının kimlikleri, tag’leri, özellikleri ve abonelikleri. Gerekli kapsam: users:read.', inputSchema: { app_id: appIdArg, ...aliasArgs }, annotations: READ },
+    { title: 'Get user', description: 'User identities, tags, properties and subscriptions. Required scope: users:read.', inputSchema: { app_id: appIdArg, ...aliasArgs }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/users/by/${seg(a.label)}/${seg(a.value)}`),
   );
   server.registerTool(
     'get_user_journeys',
-    { title: 'Kullanıcının journey’leri', description: 'Kullanıcının içinde bulunduğu ve tamamladığı journey çalıştırmaları. Gerekli kapsam: users:read.', inputSchema: { app_id: appIdArg, ...aliasArgs }, annotations: READ },
+    { title: 'User journeys', description: 'Journey runs the user is currently in or has completed. Required scope: users:read.', inputSchema: { app_id: appIdArg, ...aliasArgs }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/users/by/${seg(a.label)}/${seg(a.value)}/journeys`),
   );
   server.registerTool(
     'get_user_preferences',
-    { title: 'Kullanıcı tercihleri', description: 'Kategori ve kanal bazında abonelik tercihleri. Gerekli kapsam: users:read.', inputSchema: { app_id: appIdArg, ...aliasArgs }, annotations: READ },
+    { title: 'User preferences', description: 'Subscription preferences per category and channel. Required scope: users:read.', inputSchema: { app_id: appIdArg, ...aliasArgs }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/users/by/${seg(a.label)}/${seg(a.value)}/preferences`),
   );
   server.registerTool(
     'list_categories',
-    { title: 'Mesaj kategorileri', description: 'Tercih merkezindeki mesaj kategorileri (varsayılan açık/kapalı, kanallar). Gerekli kapsam: users:read.', inputSchema: { app_id: appIdArg }, annotations: READ },
+    { title: 'Message categories', description: 'Message categories in the preference center (default on/off, channels). Required scope: users:read.', inputSchema: { app_id: appIdArg }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/categories`),
   );
 
   // ---- olaylar
   server.registerTool(
     'list_event_definitions',
-    { title: 'Özel olaylar', description: 'App’te görülen özel olay adları, sayıları ve özellik şemaları. Gerekli kapsam: analytics:read.', inputSchema: { app_id: appIdArg, limit: z.number().int().min(1).max(500).optional(), cursor: cursorArg }, annotations: READ },
+    { title: 'Custom events', description: 'Custom event names seen in the app, their counts and property schemas. Required scope: analytics:read.', inputSchema: { app_id: appIdArg, limit: z.number().int().min(1).max(500).optional(), cursor: cursorArg }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/events/definitions${query({ limit: a.limit, cursor: a.cursor })}`),
   );
   server.registerTool(
     'get_event_definition',
-    { title: 'Olay tanımı', description: 'Tek olayın özellikleri, ilk/son görülme ve hacmi. Gerekli kapsam: analytics:read.', inputSchema: { app_id: appIdArg, name: z.string().min(1).max(100) }, annotations: READ },
+    { title: 'Event definition', description: 'Properties, first/last seen and volume of a single event. Required scope: analytics:read.', inputSchema: { app_id: appIdArg, name: z.string().min(1).max(100) }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/events/definitions/${seg(a.name)}`),
   );
 
@@ -207,8 +207,8 @@ export function registerReadTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'get_message_report',
     {
-      title: 'Teslimat raporu',
-      description: 'Gönderim/teslim/açılma/tıklama/başarısızlık; güne, kanala veya kampanyaya göre. Gerekli kapsam: analytics:read.',
+      title: 'Delivery report',
+      description: 'Sends/deliveries/opens/clicks/failures, grouped by day, channel or campaign. Required scope: analytics:read.',
       inputSchema: { app_id: appIdArg, from: fromArg, to: toArg, group_by: z.enum(['day', 'channel', 'campaign']).optional(), compare: compareArg },
       annotations: READ,
     },
@@ -216,14 +216,14 @@ export function registerReadTools(server: McpServer, kit: ToolKit): void {
   );
   server.registerTool(
     'get_subscription_report',
-    { title: 'Abonelik raporu', description: 'Kanal bazında yeni, iptal ve net abonelik eğilimi. Gerekli kapsam: analytics:read.', inputSchema: { app_id: appIdArg, from: fromArg, to: toArg, compare: compareArg }, annotations: READ },
+    { title: 'Subscription report', description: 'New, cancelled and net subscription trend per channel. Required scope: analytics:read.', inputSchema: { app_id: appIdArg, from: fromArg, to: toArg, compare: compareArg }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/analytics/subscriptions${query({ from: a.from, to: a.to, compare: a.compare })}`),
   );
   server.registerTool(
     'get_event_report',
     {
-      title: 'Olay raporu',
-      description: 'Özel olay hacmi; güne veya olay adına göre. Gerekli kapsam: analytics:read.',
+      title: 'Event report',
+      description: 'Custom event volume, grouped by day or event name. Required scope: analytics:read.',
       inputSchema: { app_id: appIdArg, name: z.string().min(1).max(100).optional(), group_by: z.enum(['day', 'name']).optional(), from: fromArg, to: toArg, compare: compareArg },
       annotations: READ,
     },
@@ -232,8 +232,8 @@ export function registerReadTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'get_conversion_report',
     {
-      title: 'Dönüşüm raporu',
-      description: 'Mesajlara atfedilen dönüşümler ve gelir (kanallar arası son temas). Gerekli kapsam: analytics:read.',
+      title: 'Conversion report',
+      description: 'Conversions and revenue attributed to messages (cross-channel last touch). Required scope: analytics:read.',
       inputSchema: { app_id: appIdArg, campaign_id: z.string().max(64).optional(), from: fromArg, to: toArg, compare: compareArg },
       annotations: READ,
     },
@@ -242,8 +242,8 @@ export function registerReadTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'run_funnel',
     {
-      title: 'Funnel analizi',
-      description: 'Sıralı olay adımlarında dönüşüm ve kayıp (2–8 adım, adımlar arası en çok `window_hours`). Gerekli kapsam: analytics:read.',
+      title: 'Funnel analysis',
+      description: 'Conversion and drop-off across ordered event steps (2–8 steps, at most `window_hours` between steps). Required scope: analytics:read.',
       inputSchema: {
         app_id: appIdArg,
         steps: z
@@ -268,17 +268,17 @@ export function registerReadTools(server: McpServer, kit: ToolKit): void {
   );
   server.registerTool(
     'get_retention_report',
-    { title: 'Elde tutma (retention)', description: 'Haftalık kohort elde tutma tablosu. Gerekli kapsam: analytics:read.', inputSchema: { app_id: appIdArg, weeks: z.number().int().min(2).max(26).optional() }, annotations: READ },
+    { title: 'Retention report', description: 'Weekly cohort retention table. Required scope: analytics:read.', inputSchema: { app_id: appIdArg, weeks: z.number().int().min(2).max(26).optional() }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/analytics/retention${query({ weeks: a.weeks })}`),
   );
   server.registerTool(
     'get_engagement_heatmap',
-    { title: 'Etkileşim ısı haritası', description: 'Gün × saat açılma/tıklama yoğunluğu (en iyi gönderim zamanı için). Gerekli kapsam: analytics:read.', inputSchema: { app_id: appIdArg, from: fromArg, to: toArg }, annotations: READ },
+    { title: 'Engagement heatmap', description: 'Day × hour open/click density (for best send time). Required scope: analytics:read.', inputSchema: { app_id: appIdArg, from: fromArg, to: toArg }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/analytics/engagement${query({ from: a.from, to: a.to })}`),
   );
   server.registerTool(
     'get_provider_report',
-    { title: 'Sağlayıcı raporu', description: 'APNs/FCM/HMS/e-posta/SMS sağlayıcı başarı ve hata kodu dağılımı. Gerekli kapsam: analytics:read.', inputSchema: { app_id: appIdArg, from: fromArg, to: toArg }, annotations: READ },
+    { title: 'Provider report', description: 'APNs/FCM/HMS/email/SMS provider success and error code distribution. Required scope: analytics:read.', inputSchema: { app_id: appIdArg, from: fromArg, to: toArg }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/analytics/providers${query({ from: a.from, to: a.to })}`),
   );
 
@@ -286,8 +286,8 @@ export function registerReadTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'list_in_app_messages',
     {
-      title: 'In-app mesajlar',
-      description: 'In-app mesajlar (durum filtresi) ve gösterim/tıklama sayaçları. Gerekli kapsam: analytics:read.',
+      title: 'List in-app messages',
+      description: 'In-app messages (filter by status) with impression/click counters. Required scope: analytics:read.',
       inputSchema: { app_id: appIdArg, status: z.enum(['draft', 'active', 'paused', 'archived']).optional(), limit: limitArg, cursor: cursorArg },
       annotations: READ,
     },
@@ -295,7 +295,7 @@ export function registerReadTools(server: McpServer, kit: ToolKit): void {
   );
   server.registerTool(
     'get_in_app_message',
-    { title: 'In-app mesaj oku', description: 'Tetikler, görünüm, kitle, sıklık ve istatistikler. Gerekli kapsam: analytics:read.', inputSchema: { app_id: appIdArg, message_id: idArg('In-app mesaj') }, annotations: READ },
+    { title: 'Get in-app message', description: 'Triggers, display, audience, frequency and stats. Required scope: analytics:read.', inputSchema: { app_id: appIdArg, message_id: idArg('In-app message') }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/in-app-messages/${seg(a.message_id)}`),
   );
 
@@ -303,8 +303,8 @@ export function registerReadTools(server: McpServer, kit: ToolKit): void {
   server.registerTool(
     'list_web_campaigns',
     {
-      title: 'Web kampanyaları',
-      description: 'Pop-up, banner ve slide-in kampanyaları. Gerekli kapsam: analytics:read.',
+      title: 'List web campaigns',
+      description: 'Pop-up, banner and slide-in campaigns. Required scope: analytics:read.',
       inputSchema: { app_id: appIdArg, status: z.enum(['draft', 'active', 'paused', 'archived']).optional(), limit: limitArg, cursor: cursorArg },
       annotations: READ,
     },
@@ -312,29 +312,29 @@ export function registerReadTools(server: McpServer, kit: ToolKit): void {
   );
   server.registerTool(
     'get_web_campaign_report',
-    { title: 'Web kampanyası raporu', description: 'Gösterim, tıklama, kapatma ve dönüşüm. Gerekli kapsam: analytics:read.', inputSchema: { app_id: appIdArg, campaign_id: idArg('Web kampanyası'), days: z.number().int().min(1).max(365).optional() }, annotations: READ },
+    { title: 'Web campaign report', description: 'Impressions, clicks, dismissals and conversions. Required scope: analytics:read.', inputSchema: { app_id: appIdArg, campaign_id: idArg('Web campaign'), days: z.number().int().min(1).max(365).optional() }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/web-campaigns/${seg(a.campaign_id)}/report${query({ days: a.days })}`),
   );
   server.registerTool(
     'list_forms',
-    { title: 'Formlar', description: 'Web formları ve gönderim sayıları. Gerekli kapsam: analytics:read.', inputSchema: { app_id: appIdArg, status: z.enum(['active', 'archived']).optional(), limit: limitArg, cursor: cursorArg }, annotations: READ },
+    { title: 'List forms', description: 'Web forms and submission counts. Required scope: analytics:read.', inputSchema: { app_id: appIdArg, status: z.enum(['active', 'archived']).optional(), limit: limitArg, cursor: cursorArg }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/forms${query({ status: a.status, limit: a.limit, cursor: a.cursor })}`),
   );
   server.registerTool(
     'list_surveys',
-    { title: 'Anketler', description: 'Anketler ve NPS. Gerekli kapsam: analytics:read.', inputSchema: { app_id: appIdArg, status: z.enum(['draft', 'active', 'closed']).optional(), limit: limitArg, cursor: cursorArg }, annotations: READ },
+    { title: 'List surveys', description: 'Surveys and NPS. Required scope: analytics:read.', inputSchema: { app_id: appIdArg, status: z.enum(['draft', 'active', 'closed']).optional(), limit: limitArg, cursor: cursorArg }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/surveys${query({ status: a.status, limit: a.limit, cursor: a.cursor })}`),
   );
   server.registerTool(
     'get_survey_report',
-    { title: 'Anket raporu', description: 'Soru bazında yanıt dağılımı ve NPS skoru. Gerekli kapsam: analytics:read.', inputSchema: { app_id: appIdArg, survey_id: idArg('Anket'), days: z.number().int().min(1).max(365).optional() }, annotations: READ },
+    { title: 'Survey report', description: 'Per-question answer distribution and NPS score. Required scope: analytics:read.', inputSchema: { app_id: appIdArg, survey_id: idArg('Survey'), days: z.number().int().min(1).max(365).optional() }, annotations: READ },
     async (a) => get(`/v1/apps/${app(a.app_id)}/surveys/${seg(a.survey_id)}/report${query({ days: a.days })}`),
   );
   server.registerTool(
     'get_inbox_metrics',
     {
-      title: 'Gelen kutusu metrikleri',
-      description: 'Canlı sohbet ve birleşik gelen kutusu: konuşma hacmi, ilk yanıt ve çözüm süreleri. Gerekli kapsam: analytics:read.',
+      title: 'Inbox metrics',
+      description: 'Live chat and unified inbox: conversation volume, first response and resolution times. Required scope: analytics:read.',
       inputSchema: { app_id: appIdArg, from: fromArg, to: toArg, channel: z.enum(['sms', 'whatsapp', 'rcs', 'email', 'chat']).optional() },
       annotations: READ,
     },

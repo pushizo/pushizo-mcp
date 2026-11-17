@@ -36,9 +36,9 @@ export function createPushizoMcpServer(options: PushizoMcpOptions): McpServer {
     { name: MCP_SERVER_NAME, version: MCP_SERVER_VERSION, title: 'Pushizo' },
     {
       instructions:
-        'Pushizo bildirim platformu araçları. Okuma araçları serbesttir; create_* araçları yalnızca taslak oluşturur, send_test_notification yalnızca ' +
-        'test cihazlarına gönderir ve ikisi de kullanıcının açık onayıyla çağrılmalıdır. Gerçek kitleye gönderim, zamanlama, yayın ve silme bu sunucuda ' +
-        'yoktur; taslaklar Pushizo dashboard’undan gözden geçirilip gönderilir. Analiz için önce list_* ile kimlikleri bulun, sonra get_* ve rapor araçlarını kullanın.',
+        'Tools for the Pushizo messaging platform (push, email, SMS, in-app, journeys). Read tools are side-effect free. create_* tools only create drafts and ' +
+        'send_test_notification only sends to test devices; call either only after the user explicitly approves. This server cannot send to real audiences, ' +
+        'schedule, publish or delete; drafts are reviewed and sent from the Pushizo dashboard. For analysis, first find IDs with list_* tools, then use get_* and report tools.',
     },
   );
   const kit = createToolKit(options.api, options.defaultAppId);
@@ -46,21 +46,21 @@ export function createPushizoMcpServer(options: PushizoMcpOptions): McpServer {
 
   server.registerTool(
     'list_segments',
-    { title: 'Segmentleri listele', description: 'App’in segmentlerini listeler (ad araması ve sayfalama). Gerekli kapsam: segments:read.', inputSchema: { app_id: appIdArg, q: z.string().max(100).optional(), limit: limitArg, cursor: cursorArg }, annotations: READ },
+    { title: 'List segments', description: 'Lists the app’s segments (name search, pagination). Required scope: segments:read.', inputSchema: { app_id: appIdArg, q: z.string().max(100).optional(), limit: limitArg, cursor: cursorArg }, annotations: READ },
     async (a) => run(() => api.request('GET', `/v1/apps/${app(a.app_id)}/segments${query({ q: a.q, limit: a.limit, cursor: a.cursor })}`)),
   );
 
   server.registerTool(
     'get_segment',
-    { title: 'Segment oku', description: 'Segment tanımı ve tahmini kitle boyutu. Gerekli kapsam: segments:read.', inputSchema: { app_id: appIdArg, segment_id: idArg('Segment') }, annotations: READ },
+    { title: 'Get segment', description: 'Segment definition and estimated audience size. Required scope: segments:read.', inputSchema: { app_id: appIdArg, segment_id: idArg('Segment') }, annotations: READ },
     async (a) => run(() => api.request('GET', `/v1/apps/${app(a.app_id)}/segments/${seg(a.segment_id)}`)),
   );
 
   server.registerTool(
     'list_campaigns',
     {
-      title: 'Kampanyaları listele',
-      description: 'Kampanyaları listeler (durum/tür/ad filtresi). Gerekli kapsam: analytics:read.',
+      title: 'List campaigns',
+      description: 'Lists campaigns (filter by status, type or name). Required scope: analytics:read.',
       inputSchema: {
         app_id: appIdArg,
         q: z.string().max(100).optional(),
@@ -75,21 +75,21 @@ export function createPushizoMcpServer(options: PushizoMcpOptions): McpServer {
 
   server.registerTool(
     'get_campaign',
-    { title: 'Kampanya oku', description: 'Kampanya ayrıntısı (kitle, içerik, onay durumu, istatistik). Gerekli kapsam: analytics:read.', inputSchema: { app_id: appIdArg, campaign_id: idArg('Kampanya') }, annotations: READ },
+    { title: 'Get campaign', description: 'Campaign details (audience, content, approval status, stats). Required scope: analytics:read.', inputSchema: { app_id: appIdArg, campaign_id: idArg('Campaign') }, annotations: READ },
     async (a) => run(() => api.request('GET', `/v1/apps/${app(a.app_id)}/campaigns/${seg(a.campaign_id)}`)),
   );
 
   server.registerTool(
     'list_campaign_messages',
-    { title: 'Kampanya çalıştırmaları', description: 'Kampanyanın mesajları (her çalıştırma bir mesaj) ve sayaçları. Gerekli kapsam: analytics:read.', inputSchema: { app_id: appIdArg, campaign_id: idArg('Kampanya') }, annotations: READ },
+    { title: 'Campaign runs', description: 'Messages of a campaign (one message per run) with their counters. Required scope: analytics:read.', inputSchema: { app_id: appIdArg, campaign_id: idArg('Campaign') }, annotations: READ },
     async (a) => run(() => api.request('GET', `/v1/apps/${app(a.app_id)}/campaigns/${seg(a.campaign_id)}/messages`)),
   );
 
   server.registerTool(
     'list_messages',
     {
-      title: 'Mesajları listele',
-      description: 'Gönderilen mesajlar (API, kampanya, journey) ve teslim sayaçları. Gerekli kapsam: analytics:read veya notifications:write.',
+      title: 'List messages',
+      description: 'Sent messages (API, campaign, journey) with delivery counters. Required scope: analytics:read or notifications:write.',
       inputSchema: { app_id: appIdArg, limit: limitArg, cursor: cursorArg },
       annotations: READ,
     },
@@ -98,20 +98,20 @@ export function createPushizoMcpServer(options: PushizoMcpOptions): McpServer {
 
   server.registerTool(
     'get_message',
-    { title: 'Mesaj oku', description: 'Mesaj durumu ve sayaçları. Gerekli kapsam: analytics:read veya notifications:write.', inputSchema: { app_id: appIdArg, message_id: idArg('Mesaj') }, annotations: READ },
+    { title: 'Get message', description: 'Message status and counters. Required scope: analytics:read or notifications:write.', inputSchema: { app_id: appIdArg, message_id: idArg('Message') }, annotations: READ },
     async (a) => run(() => api.request('GET', `/v1/notifications/${seg(a.message_id)}${query({ app_id: decodeURIComponent(app(a.app_id)) })}`)),
   );
 
   server.registerTool(
     'get_analytics_summary',
     {
-      title: 'Analitik özet',
-      description: 'Genel bakış KPI’ları: gönderim, teslim, açılma/tıklama oranları, abonelik büyümesi (son 7/30 gün veya özel aralık). Gerekli kapsam: analytics:read.',
+      title: 'Analytics summary',
+      description: 'Overview KPIs: sends, deliveries, open/click rates, subscription growth (last 7/30 days or a custom range). Required scope: analytics:read.',
       inputSchema: {
         app_id: appIdArg,
         range: z.enum(['7d', '30d']).optional(),
-        from: z.string().max(40).optional().describe('ISO-8601 başlangıç (to ile birlikte)'),
-        to: z.string().max(40).optional().describe('ISO-8601 bitiş'),
+        from: z.string().max(40).optional().describe('ISO-8601 start (use together with to)'),
+        to: z.string().max(40).optional().describe('ISO-8601 end'),
       },
       annotations: READ,
     },
@@ -121,8 +121,8 @@ export function createPushizoMcpServer(options: PushizoMcpOptions): McpServer {
   server.registerTool(
     'list_templates',
     {
-      title: 'Şablonları listele',
-      description: 'Mesaj şablonları (kanal/ad filtresi). Gerekli kapsam: analytics:read.',
+      title: 'List templates',
+      description: 'Message templates (filter by channel or name). Required scope: analytics:read.',
       inputSchema: { app_id: appIdArg, q: z.string().max(100).optional(), channel: z.string().max(32).optional(), limit: limitArg, cursor: cursorArg },
       annotations: READ,
     },
@@ -134,17 +134,17 @@ export function createPushizoMcpServer(options: PushizoMcpOptions): McpServer {
     server.registerTool(
       'create_campaign_draft',
       {
-        title: 'Kampanya taslağı oluştur',
+        title: 'Create campaign draft',
         description:
-          `${WRITE_NOTE} Kampanyayı \`draft\` durumunda oluşturur. Kitle segment kimlikleriyle verilir; içerik doğrudan veya template_id ile. ` +
-          'Örnek içerik: {"headings":{"tr":"Başlık"},"contents":{"tr":"Metin"}}.',
+          `${WRITE_NOTE} Creates a campaign in \`draft\` status. Audience is given as segment IDs; content inline or via template_id. ` +
+          'Example content: {"headings":{"en":"Title"},"contents":{"en":"Body"}}.',
         inputSchema: {
           app_id: appIdArg,
           name: z.string().min(2).max(120),
-          included_segments: z.array(z.string().min(1).max(64)).max(20).optional().describe('Dahil segmentler; boşsa tüm aboneler.'),
+          included_segments: z.array(z.string().min(1).max(64)).max(20).optional().describe('Included segments; empty means all subscribers.'),
           excluded_segments: z.array(z.string().min(1).max(64)).max(20).optional(),
-          channels: z.array(z.string().max(32)).max(10).optional().describe('ör. ["web_push","android_push","ios_push","email","sms"]'),
-          content: z.record(z.string(), z.unknown()).optional().describe('Mesaj içeriği (headings/contents/email_subject…).'),
+          channels: z.array(z.string().max(32)).max(10).optional().describe('e.g. ["web_push","android_push","ios_push","email","sms"]'),
+          content: z.record(z.string(), z.unknown()).optional().describe('Message content (headings/contents/email_subject…).'),
           template_id: z.string().max(64).optional(),
           labels: z.array(z.string().min(1).max(40)).max(9).optional(),
         },
@@ -169,15 +169,15 @@ export function createPushizoMcpServer(options: PushizoMcpOptions): McpServer {
     server.registerTool(
       'create_segment_draft',
       {
-        title: 'Segment taslağı oluştur',
+        title: 'Create segment draft',
         description:
-          `${WRITE_NOTE} Dinamik segment oluşturur (kampanyada kullanılana kadar etkisi yoktur). Tanım biçimi: ` +
+          `${WRITE_NOTE} Creates a dynamic segment (no effect until used in a campaign). Definition format: ` +
           '{"all":[{"field":"tags.plan","op":"eq","value":"pro"},{"field":"last_active_at","op":"within_days","value":30}]}.',
         inputSchema: {
           app_id: appIdArg,
           name: z.string().min(1).max(200),
           description: z.string().max(500).optional(),
-          definition: z.record(z.string(), z.unknown()).describe('Segment tanımı (all/any/none koşul grupları).'),
+          definition: z.record(z.string(), z.unknown()).describe('Segment definition (all/any/none condition groups).'),
         },
         annotations: WRITE,
       },

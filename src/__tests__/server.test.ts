@@ -56,15 +56,15 @@ describe('Pushizo MCP sunucusu', () => {
       expect(t.description?.length ?? 0).toBeGreaterThan(20);
       if (t.name.startsWith('create_')) {
         expect(t.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: false });
-        expect(t.description).toContain('Onaylı mod');
+        expect(t.description).toContain('Approved mode');
         expect(t.description).toContain('mcp:write');
       } else if (t.name === 'send_test_notification') {
         expect(t.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: false, openWorldHint: true });
-        expect(t.description).toContain('TEST CİHAZLARINA');
+        expect(t.description).toContain('TEST DEVICES');
         expect(t.description).toContain('mcp:write');
       } else {
         expect(t.annotations).toMatchObject({ readOnlyHint: true, destructiveHint: false });
-        expect(t.description).toMatch(/Gerekli kapsam: [a-z:]+/);
+        expect(t.description).toMatch(/Required scope: [a-z:]+/);
       }
     }
   });
@@ -227,7 +227,7 @@ describe('Pushizo MCP sunucusu', () => {
     expect(text(denied)).toContain('HS_FORBIDDEN (HTTP 403)');
     const noApp = await client.callTool({ name: 'list_segments', arguments: {} });
     expect(noApp.isError).toBe(true);
-    expect(text(noApp)).toContain('app_id gerekli');
+    expect(text(noApp)).toContain('app_id is required');
   });
 
   it('kimlik ve yol parçalarında `.`/`..` reddedilir; istek API ucuna hiç gitmez (ADR-0076 §5)', async () => {
@@ -359,13 +359,13 @@ describe('Pushizo MCP sunucusu', () => {
     const limited = await connect(fakeApi(() => {
       throw new PushizoApiError(429, 'HS_RATE_LIMITED', 'Çok fazla istek.');
     }).api, 'app_1');
-    expect(text(await limited.callTool({ name: 'list_predictions', arguments: {} }))).toContain('bekleyip yeniden deneyin');
+    expect(text(await limited.callTool({ name: 'list_predictions', arguments: {} }))).toContain('wait a few seconds and retry');
     const slow = await connect(fakeApi(() => {
       throw new DOMException('The operation was aborted due to timeout', 'TimeoutError');
     }).api, 'app_1');
     const timedOut = await slow.callTool({ name: 'run_report', arguments: { source: 'events', metrics: ['count'] } });
     expect(timedOut.isError).toBe(true);
-    expect(text(timedOut)).toContain('zaman aşımına uğradı');
+    expect(text(timedOut)).toContain('Request timed out');
   });
 
   it('fetch istemcisi Bearer anahtarı gönderir ve hata gövdesini çözer', async () => {

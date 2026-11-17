@@ -8,26 +8,26 @@ export const READ: ToolAnnotations = { readOnlyHint: true, destructiveHint: fals
 export const WRITE: ToolAnnotations = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false };
 
 export const WRITE_NOTE =
-  '[Onaylı mod — yazma] Bu araç Pushizo’da kayıt oluşturur. Yalnızca TASLAK oluşturur, hiçbir mesaj göndermez veya zamanlamaz; ' +
-  'API anahtarında `mcp:write` kapsamı olmalıdır. Çağırmadan önce kullanıcıdan açık onay alın.';
+  '[Approved mode — write] This tool creates a record in Pushizo. It only creates a DRAFT and never sends or schedules a message; ' +
+  'the API key needs the `mcp:write` scope. Get explicit approval from the user before calling it.';
 
 /**
  * Kimlikler URL yoluna yazılır: `.` ve `..` WHATWG URL çözümlemesinde başka uca kayar, `/` yolu böler. Desen bunları
  * dışarıda bırakır (ADR-0076 §5).
  */
 const ID_PATTERN = /^(?!\.{1,2}$)[A-Za-z0-9_.:-]+$/;
-const ID_MESSAGE = 'Kimlik yalnızca harf, rakam, `_`, `-`, `.` ve `:` içerebilir.';
+const ID_MESSAGE = 'ID may only contain letters, digits, `_`, `-`, `.` and `:`.';
 
-export const appIdArg = z.string().min(1).max(64).regex(ID_PATTERN, ID_MESSAGE).optional().describe('App kimliği (app_…). App’e bağlı anahtarda veya varsayılan app tanımlıysa gerekmez.');
-export const limitArg = z.number().int().min(1).max(100).optional().describe('Sayfa boyutu (varsayılan 20).');
-export const cursorArg = z.string().max(500).optional().describe('Önceki yanıttaki `next_cursor` değeri.');
-export const idArg = (what: string) => z.string().min(1).max(64).regex(ID_PATTERN, ID_MESSAGE).describe(`${what} kimliği`);
-export const fromArg = z.string().max(40).optional().describe('ISO-8601 başlangıç (ör. 2026-10-01T00:00:00Z); verilmezse rapor varsayılanı.');
-export const toArg = z.string().max(40).optional().describe('ISO-8601 bitiş.');
+export const appIdArg = z.string().min(1).max(64).regex(ID_PATTERN, ID_MESSAGE).optional().describe('App ID (app_…). Not needed with an app-scoped key or when a default app is configured.');
+export const limitArg = z.number().int().min(1).max(100).optional().describe('Page size (default 20).');
+export const cursorArg = z.string().max(500).optional().describe('The `next_cursor` value from the previous response.');
+export const idArg = (what: string) => z.string().min(1).max(64).regex(ID_PATTERN, ID_MESSAGE).describe(`${what} ID`);
+export const fromArg = z.string().max(40).optional().describe('ISO-8601 start (e.g. 2026-10-01T00:00:00Z); defaults to the report default.');
+export const toArg = z.string().max(40).optional().describe('ISO-8601 end.');
 /** Segment/arama tanımı: all/any/none koşul grupları (segment taslağıyla aynı biçim). */
 export const definitionArg = z
   .record(z.string(), z.unknown())
-  .describe('Koşul tanımı, ör. {"all":[{"field":"tags.plan","op":"eq","value":"pro"},{"field":"last_active_at","op":"within_days","value":30}]}.');
+  .describe('Condition definition, e.g. {"all":[{"field":"tags.plan","op":"eq","value":"pro"},{"field":"last_active_at","op":"within_days","value":30}]}.');
 
 export function query(params: Record<string, string | number | boolean | undefined>): string {
   const q = new URLSearchParams();
@@ -42,8 +42,8 @@ export function ok(data: unknown): CallToolResult {
 
 /** Sık görülen durum kodları için modelin sonraki adımını belirleyen ipucu. */
 const HTTP_HINTS: Record<number, string> = {
-  403: ' — API anahtarının kapsamlarını kontrol edin.',
-  429: ' — Hız sınırına takıldı; birkaç saniye bekleyip yeniden deneyin, art arda çağrıları azaltın.',
+  403: ' — Check the API key scopes.',
+  429: ' — Rate limited; wait a few seconds and retry, and reduce back-to-back calls.',
 };
 
 export function fail(err: unknown): CallToolResult {
@@ -52,7 +52,7 @@ export function fail(err: unknown): CallToolResult {
       ? `${err.code} (HTTP ${err.status}): ${err.message}${HTTP_HINTS[err.status] ?? ''}`
       : err instanceof Error
         ? err.name === 'TimeoutError' || err.name === 'AbortError'
-          ? 'İstek zaman aşımına uğradı; daha dar bir tarih aralığı veya daha küçük `limit` ile yeniden deneyin.'
+          ? 'Request timed out; retry with a narrower date range or a smaller `limit`.'
           : err.message
         : String(err);
   return { isError: true, content: [{ type: 'text', text }] };
@@ -69,7 +69,7 @@ export interface ToolKit {
 export function createToolKit(api: PushizoApi, defaultAppId?: string): ToolKit {
   function app(appId?: string): string {
     const id = appId ?? defaultAppId;
-    if (!id) throw new Error('app_id gerekli (anahtar organizasyon geneliyse araçta app_id verin).');
+    if (!id) throw new Error('app_id is required (pass app_id in the tool call when the key is organization-wide).');
     return seg(id);
   }
   async function run(fn: () => Promise<unknown>): Promise<CallToolResult> {
@@ -87,6 +87,6 @@ export function createToolKit(api: PushizoApi, defaultAppId?: string): ToolKit {
  * tek başına yol parçası olunca istek başka uca gider, bu yüzden reddedilir.
  */
 export function seg(value: string): string {
-  if (value === '.' || value === '..') throw new Error('Geçersiz değer: `.` ve `..` yol parçası olarak kullanılamaz.');
+  if (value === '.' || value === '..') throw new Error('Invalid value: `.` and `..` cannot be used as path segments.');
   return encodeURIComponent(value);
 }
