@@ -30,8 +30,8 @@ const EXCLUDED_READS: Record<string, string> = {
   'GET /v1/apps/{}/ads/creatives': 'imzalı görsel bağlantısı taşır',
 };
 
-/** Yazma araçlarının gidebileceği uçlar: yalnız MCP taslak/test uçları (`mcp:write`). */
-const MCP_WRITE_PREFIX = /^POST \/v1\/apps\/\{\}\/mcp\//;
+/** Yazma araçlarının gidebileceği uçlar: yalnız MCP taslak/test uçları ve MCP app oluşturma (`mcp:write`; ADR-0097). */
+const MCP_WRITE_PREFIX = /^POST \/v1\/(apps\/\{\}\/mcp\/|mcp\/apps$)/;
 
 /** Salt okunur olduğu için okuma aracı olarak sunulan POST uçları (sorgu, önizleme, tahmin, denetim). */
 const READ_ONLY_POSTS = new Set([

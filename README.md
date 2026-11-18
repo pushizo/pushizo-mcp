@@ -11,7 +11,7 @@
 
 ## English
 
-**Pushizo MCP server** — Model Context Protocol server for Pushizo. AI clients such as Claude, Cursor and VS Code can read segments, campaigns, messages, templates and analytics, and create draft campaigns and segments with explicit approval. There are no send, schedule or delete tools. The remote server works without installation (OAuth 2.1); the local server runs over stdio.
+**Pushizo MCP server** — Model Context Protocol server for Pushizo. AI clients such as Claude, Cursor and VS Code can read segments, campaigns, messages, templates and analytics, and create draft campaigns and segments with explicit approval. They can also set Pushizo up in an app: create the app, return the same setup code as the dashboard, and upload push credentials from a file path on the local server so key contents never enter the conversation. There are no send, schedule or delete tools. The remote server works without installation (OAuth 2.1); the local server runs over stdio.
 
 ```bash
 # Remote server (no install)
@@ -93,6 +93,7 @@ Paket `pushizo-mcp` komutunu da sağlar (`npm install -g @pushizo/mcp-server` so
 | `PUSHIZO_API_KEY` | evet | `hs_live_…` API anahtarı. Okuma için `segments:read`, `analytics:read`; kullanıcı araçları için `users:read`; taslak ve test gönderimi için `mcp:write`. |
 | `PUSHIZO_API_URL` | hayır | API kök adresi; varsayılan `https://api.pushizo.com`. `https` olmalı; yerel geliştirmede `http://localhost:<port>` veya `http://127.0.0.1:<port>` kabul edilir. |
 | `PUSHIZO_APP_ID` | hayır | Araçta `app_id` verilmezse kullanılacak app. App'e bağlı anahtarda gerekmez. |
+| `PUSHIZO_CREDENTIALS_DIR` | hayır | `upload_channel_credentials` aracının anahtar dosyalarını okuyabileceği dizin; varsayılan sürecin çalışma dizini. Dizin dışındaki dosyalar okunmaz. |
 
 stdout yalnızca MCP iletileri içindir; tanılama ve hata metinleri stderr'e yazılır. Anahtar eksikse veya adres
 geçersizse süreç 1 koduyla çıkar.
@@ -119,7 +120,8 @@ geçersizse süreç 1 koduyla çıkar.
 
 ## Araçlar
 
-228 araç (218 okuma, 9 taslak, test gönderimi); public API'deki her okuma ucunun bir aracı vardır. Ayrıntılı liste
+231 araç (220 okuma, 9 taslak, app oluşturma, test gönderimi); yerel stdio sunucusunda ayrıca
+`upload_channel_credentials` (232). Public API'deki her okuma ucunun bir aracı vardır. Ayrıntılı liste
 `docs/guides/mcp.md` içindedir. Özet:
 
 | Araç | Tür | Gerekli kapsam |
@@ -132,10 +134,26 @@ geçersizse süreç 1 koduyla çıkar.
 | Şirket, ilgi etiketleri, SQL sorgu (`run_sql_query`, yalnız SELECT), veri boru hattı, ambar segmenti, konuşma ve AI ajanı, özel AI ajanları, web kişiselleştirme, site içi arama, reklam, kaldırma ve Android teslimat raporu okuma araçları | okuma | `users:read`, `analytics:read`, `segments:read` veya `admin` (araca göre) |
 | `create_campaign_draft`, `create_segment_draft`, `create_template_draft`, `create_journey_draft`, `create_in_app_draft`, `create_web_campaign_draft`, `create_web_personalization_draft`, `create_survey_draft`, `create_landing_page_draft` | onaylı mod — taslak | `mcp:write` |
 | `send_test_notification` | onaylı mod — yalnız test cihazı | `mcp:write` |
+| `get_setup_status`, `get_sdk_snippet` | okuma — kurulum | `users:read` |
+| `create_app` | onaylı mod — app oluşturma | `mcp:write` + app oluşturma yetkisi (organizasyon geneli anahtar) |
+| `upload_channel_credentials` | yalnız yerel stdio — anahtarı dosya yolundan yükler | `admin` |
 
 `admin` kapsamı tüm araçları açar. Taslak araçları gönderim, zamanlama ve yayın yapmaz (kampanya, journey, in-app, web kampanyası, web kişiselleştirme, anket ve landing
 `draft`, şablon ve kampanyaya `mcp` etiketi, segment dinamik). `send_test_notification` gerçek kitleye gidemez.
 Asistandan çağırmadan önce kullanıcının açık onayı istenir.
+
+## Yapay zekâ ile kurulum
+
+"Pushizo'yu uygulamama kur" dediğinizde asistan app'i oluşturur (`create_app`), panel rehberiyle aynı kurulum kodunu
+verir (`get_sdk_snippet`), push anahtarını yükler ve ilk aboneyi doğrular (`get_setup_status`).
+
+Anahtar (`.p8`, `.p12`, Firebase servis hesabı JSON'u) sohbete yapıştırılmaz: yerel sunucuda
+`upload_channel_credentials` dosyanın **yolunu** alır, dosyayı bu süreç okur ve doğrudan Pushizo API'sine gönderir.
+Metin sırları (`client_secret`, `.p12` parolası) dosya yolu ya da ortam değişkeni adıyla verilir. Çıktı yalnız durumdur
+(`active`/`invalid`, hata kodu, öneri, dosya parmak izi). Dosyalar yalnız çalışma dizini ya da
+`PUSHIZO_CREDENTIALS_DIR` altından okunur; `..`, mutlak yol ve sembolik bağ ile dışarı çıkış reddedilir. Uzak (HTTP)
+sunucuda bu araç yoktur; `get_setup_status` panel bağlantısını verir. Ayrıntı ve örnek akış: `docs/guides/mcp.md`
+"Yapay zekâ ile kurulum".
 
 ## Kütüphane olarak
 

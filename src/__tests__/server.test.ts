@@ -32,9 +32,10 @@ describe('Pushizo MCP sunucusu', () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     // ADR-0043: 11 → 54 araç; plan 15 Faz 51: +19 içgörü okuma aracı = 73; public API eşitliği: +126 okuma, +4 taslak = 203;
-    // kapsam tamamlama 2. tur (ADR-0095): +25 okuma = 228 (gerçek kitleye gönderim/silme yok).
-    expect(names).toHaveLength(228);
-    expect(new Set(names).size).toBe(228);
+    // kapsam tamamlama 2. tur (ADR-0095): +25 okuma = 228; kurulum (ADR-0097): +2 okuma, +1 app oluşturma = 231
+    // (gerçek kitleye gönderim/silme yok). Yerel stdio sunucusunda ayrıca `upload_channel_credentials` (232).
+    expect(names).toHaveLength(231);
+    expect(new Set(names).size).toBe(231);
     expect(names).toEqual(
       expect.arrayContaining([
         'create_campaign_draft',
@@ -455,13 +456,14 @@ describe('Pushizo MCP sunucusu', () => {
       'create_survey_draft',
       'create_landing_page_draft',
       'send_test_notification',
+      'create_app',
     ];
     const readOnly = await names(['analytics:read', 'users:read']);
-    expect(readOnly).toHaveLength(228 - writeTools.length);
+    expect(readOnly).toHaveLength(231 - writeTools.length);
     for (const tool of writeTools) expect(readOnly).not.toContain(tool);
     expect(await names(['mcp:write'])).toEqual(expect.arrayContaining(writeTools));
     expect(await names(['admin'])).toEqual(expect.arrayContaining(writeTools));
-    expect(await names()).toHaveLength(228);
+    expect(await names()).toHaveLength(231);
   });
 
   it('hız sınırı ve zaman aşımı hataları yeniden deneme ipucuyla döner', async () => {

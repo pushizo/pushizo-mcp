@@ -6,7 +6,9 @@ import { registerDataTools } from './tools-data.js';
 import { registerEngageTools } from './tools-engage.js';
 import { registerInsightTools } from './tools-insights.js';
 import { registerOpsTools } from './tools-ops.js';
+import type { CredentialHost } from './credential-files.js';
 import { registerReadTools } from './tools-read.js';
+import { registerLocalTools, registerSetupReadTools, registerSetupWriteTools } from './tools-setup.js';
 import { registerWriteTools } from './tools-write.js';
 
 export const MCP_SERVER_NAME = 'pushizo';
@@ -22,6 +24,11 @@ export interface PushizoMcpOptions {
    * Verilmezse (stdio) tüm araçlar listelenir; yetki her çağrıda yine sunucuda denetlenir.
    */
   scopes?: readonly string[];
+  /**
+   * Yalnız yerel (stdio) süreçte verilir: anahtarı dosya yolundan yükleyen araç kaydedilir (ADR-0097). Uzak (HTTP)
+   * taşımada verilmez; sunucu kullanıcının dosya sistemini göremez.
+   */
+  local?: CredentialHost;
 }
 
 /** Yazma araçları listelensin mi: kapsam bilinmiyorsa evet, biliniyorsa `mcp:write` veya `admin` gerekir. */
@@ -33,7 +40,8 @@ export function canListWriteTools(scopes: readonly string[] | undefined): boolea
  * Pushizo MCP sunucusu (ADR-0031 §6, ADR-0043): segment, kampanya, mesaj, şablon, journey, kullanıcı, olay, analitik,
  * in-app ve web büyüme okuma araçları; veri (şirket, SQL, boru hattı, ambar) ve etkileşim (konuşma, AI ajanı, site
  * araması, reklam) okuma araçları; kampanya/segment/şablon/journey/in-app/web kampanyası/web kişiselleştirme/anket/
- * landing taslağı ve test cihazlarına test gönderimi.
+ * landing taslağı ve test cihazlarına test gönderimi; kurulum araçları (ADR-0097: app oluşturma, kurulum durumu, SDK kodu
+ * ve yalnız yerel süreçte anahtarı dosya yolundan yükleme).
  * Taşıma bağımsızdır (stdio, Streamable HTTP, testte in-memory).
  */
 export function createPushizoMcpServer(options: PushizoMcpOptions): McpServer {
@@ -43,7 +51,10 @@ export function createPushizoMcpServer(options: PushizoMcpOptions): McpServer {
       instructions:
         'Tools for the Pushizo messaging platform (push, email, SMS, in-app, journeys). Read tools are side-effect free. create_* tools only create drafts and ' +
         'send_test_notification only sends to test devices; call either only after the user explicitly approves. This server cannot send to real audiences, ' +
-        'schedule, publish or delete; drafts are reviewed and sent from the Pushizo dashboard. For analysis, first find IDs with list_* tools, then use get_* and report tools.',
+        'schedule, publish or delete; drafts are reviewed and sent from the Pushizo dashboard. For analysis, first find IDs with list_* tools, then use get_* and report tools. ' +
+        'To set Pushizo up in an app: create_app (after approval), get_sdk_snippet for the code, then the push credentials, then get_setup_status until the first subscriber arrives. ' +
+        'Never ask the user to paste a push key (.p8, .p12, service account JSON, client secret) into the chat and never read such a file yourself: on a local server pass its PATH to ' +
+        'upload_channel_credentials; otherwise give the user the dashboard link from get_setup_status.',
     },
   );
   const kit = createToolKit(options.api, options.defaultAppId);
@@ -195,6 +206,9 @@ export function createPushizoMcpServer(options: PushizoMcpOptions): McpServer {
   registerDataTools(server, kit);
   registerEngageTools(server, kit);
   registerOpsTools(server, kit);
+  registerSetupReadTools(server, kit);
   if (writable) registerWriteTools(server, kit);
+  if (writable) registerSetupWriteTools(server, kit);
+  if (writable && options.local) registerLocalTools(server, kit, options.local);
   return server;
 }

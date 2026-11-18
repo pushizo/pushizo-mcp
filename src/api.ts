@@ -3,7 +3,7 @@
  * kapsamları), kiracı izolasyonu ve RLS sunucuda, her çağrıda public API ile birebir aynı biçimde uygulanır.
  */
 export interface PushizoApi {
-  request<T = unknown>(method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: string, body?: unknown): Promise<T>;
+  request<T = unknown>(method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', path: string, body?: unknown): Promise<T>;
 }
 
 /** API hata yanıtı (`{ error: { code, message } }`). */
@@ -46,7 +46,7 @@ export function createFetchApi(options: FetchApiOptions): PushizoApi {
   const base = options.baseUrl.replace(/\/$/, '');
   const fetchImpl = options.fetchImpl ?? fetch;
   return {
-    async request<T>(method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: string, body?: unknown): Promise<T> {
+    async request<T>(method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', path: string, body?: unknown): Promise<T> {
       const res = await fetchImpl(`${base}${path}`, {
         method,
         headers: {
