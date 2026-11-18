@@ -2,13 +2,13 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "com.pushizo/mcp",
   "title": "Pushizo",
-  "description": "Push, email, SMS, in-app and journeys. 228 tools: reads and drafts; only test sends.",
+  "description": "Push, email, SMS, in-app and journeys. 231 tools: reads, drafts, app setup; only test sends.",
   "websiteUrl": "https://docs.pushizo.com/docs/integrations/mcp",
   "repository": {
     "url": "https://github.com/pushizo/pushizo-mcp",
     "source": "github"
   },
-  "version": "0.3.0",
+  "version": "0.4.0",
   "remotes": [
     {
       "type": "streamable-http",
@@ -19,7 +19,7 @@
     {
       "registryType": "npm",
       "identifier": "@pushizo/mcp-server",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "transport": {
         "type": "stdio"
       },
@@ -40,6 +40,12 @@
         {
           "name": "PUSHIZO_APP_ID",
           "description": "Default app id (app_…) when a tool call omits app_id",
+          "isRequired": false,
+          "format": "string"
+        },
+        {
+          "name": "PUSHIZO_CREDENTIALS_DIR",
+          "description": "Directory push key files may be read from by upload_channel_credentials (default: working directory)",
           "isRequired": false,
           "format": "string"
         }

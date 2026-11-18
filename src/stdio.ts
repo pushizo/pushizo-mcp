@@ -8,6 +8,8 @@ import { createPushizoMcpServer } from './server.js';
  * - `PUSHIZO_API_KEY` (zorunlu): `hs_live_…` API anahtarı (okuma kapsamları; taslak için `mcp:write`).
  * - `PUSHIZO_API_URL` (varsayılan `https://api.pushizo.com`).
  * - `PUSHIZO_APP_ID` (isteğe bağlı): araçlarda app_id verilmezse kullanılacak app.
+ * - `PUSHIZO_CREDENTIALS_DIR` (isteğe bağlı): `upload_channel_credentials` aracının dosya okuyabileceği kök dizin
+ *   (varsayılan: sürecin çalışma dizini). Anahtar dosyaları yalnız bu dizinin altından okunur (ADR-0097).
  * stdout yalnızca MCP iletileri içindir; tanılama stderr'e yazılır.
  */
 const apiKey = process.env.PUSHIZO_API_KEY?.trim();
@@ -24,6 +26,7 @@ if (!/^https:\/\//.test(baseUrl) && !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?(
 const server = createPushizoMcpServer({
   api: createFetchApi({ baseUrl, apiKey, userAgent: 'pushizo-mcp-stdio' }),
   defaultAppId: process.env.PUSHIZO_APP_ID?.trim() || undefined,
+  local: { rootDir: process.env.PUSHIZO_CREDENTIALS_DIR?.trim() || process.cwd(), env: process.env },
 });
 await server.connect(new StdioServerTransport());
 console.error(`Pushizo MCP server (stdio) ready: ${baseUrl}`);
