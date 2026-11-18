@@ -2,13 +2,13 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "com.pushizo/mcp",
   "title": "Pushizo",
-  "description": "Push, email, SMS and in-app messaging: segments, campaigns, analytics and draft tools.",
+  "description": "Push, email, SMS, in-app and journeys. 228 tools: reads and drafts; only test sends.",
   "websiteUrl": "https://docs.pushizo.com/docs/integrations/mcp",
   "repository": {
     "url": "https://github.com/pushizo/pushizo-mcp",
     "source": "github"
   },
-  "version": "0.1.0",
+  "version": "0.3.0",
   "remotes": [
     {
       "type": "streamable-http",
@@ -19,14 +19,14 @@
     {
       "registryType": "npm",
       "identifier": "@pushizo/mcp-server",
-      "version": "0.1.0",
+      "version": "0.3.0",
       "transport": {
         "type": "stdio"
       },
       "environmentVariables": [
         {
           "name": "PUSHIZO_API_KEY",
-          "description": "Pushizo API key (hs_live_…) with segments:read and analytics:read scopes; mcp:write for drafts",
+          "description": "Pushizo API key (hs_live_…). segments:read, analytics:read, users:read for reads; mcp:write for drafts and test sends",
           "isRequired": true,
           "isSecret": true,
           "format": "string"

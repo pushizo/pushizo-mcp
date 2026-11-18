@@ -12,12 +12,12 @@ import { createPushizoMcpServer } from './server.js';
  */
 const apiKey = process.env.PUSHIZO_API_KEY?.trim();
 if (!apiKey) {
-  console.error('PUSHIZO_API_KEY tanımlı değil.');
+  console.error('PUSHIZO_API_KEY is not set.');
   process.exit(1);
 }
 const baseUrl = process.env.PUSHIZO_API_URL?.trim() || 'https://api.pushizo.com';
 if (!/^https:\/\//.test(baseUrl) && !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/.test(baseUrl)) {
-  console.error('PUSHIZO_API_URL https olmalı (yerel geliştirmede http://localhost kabul edilir).');
+  console.error('PUSHIZO_API_URL must use https (http://localhost is accepted for local development).');
   process.exit(1);
 }
 
@@ -26,4 +26,4 @@ const server = createPushizoMcpServer({
   defaultAppId: process.env.PUSHIZO_APP_ID?.trim() || undefined,
 });
 await server.connect(new StdioServerTransport());
-console.error(`Pushizo MCP sunucusu (stdio) hazır: ${baseUrl}`);
+console.error(`Pushizo MCP server (stdio) ready: ${baseUrl}`);
