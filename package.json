@@ -1,6 +1,6 @@
 {
   "name": "@pushizo/mcp-server",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "mcpName": "com.pushizo/mcp",
   "description": "Pushizo MCP server: 231 read, draft and setup tools (stdio + Streamable HTTP). Test sends go to test devices only.",
   "license": "MIT",
